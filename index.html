@@ -1116,6 +1116,7 @@ header .subtitle {
     <div class="picker-label" id="picker-label">Select your trip folder</div>
     <div class="picker-hint" id="picker-hint">Contains your JSON config + documents</div>
     <input type="file" accept=".json" class="picker-input" id="file-input">
+    <input type="file" webkitdirectory class="picker-input" id="file-input-dir">
   </div>
   
   <p class="picker-sample">
@@ -1184,15 +1185,10 @@ const changeTripBtn = document.getElementById('change-trip-btn');
 // Check if folder picker is supported (Chrome/Edge)
 const FOLDER_PICKER_SUPPORTED = 'showDirectoryPicker' in window;
 
-// Update UI based on browser support
-if (!FOLDER_PICKER_SUPPORTED) {
-  document.getElementById('picker-label').textContent = 'Select your trip JSON file';
-  document.getElementById('picker-hint').textContent = 'Drag & drop or click to browse';
-  document.querySelector('#picker-box .picker-icon').textContent = '📋';
-}
+const fileInputDir = document.getElementById('file-input-dir');
 
 pickerBox.addEventListener('click', async () => {
-  // Try folder picker first (Chrome/Edge) - loads JSON + docs in one step
+  // Try File System Access API first (Chrome/Edge)
   if (FOLDER_PICKER_SUPPORTED) {
     try {
       const dirHandle = await window.showDirectoryPicker();
@@ -1200,11 +1196,12 @@ pickerBox.addEventListener('click', async () => {
       return;
     } catch (e) {
       if (e.name === 'AbortError') return;
-      console.log('Folder picker failed, falling back to file picker');
+      console.log('Folder picker failed, falling back');
     }
   }
-  // Fallback: file picker (iOS/Safari)
-  fileInput.click();
+  // Fallback: webkitdirectory input (iOS Safari, Firefox, etc.)
+  // Recursively reads all files in the selected folder including subfolders
+  fileInputDir.click();
 });
 
 async function loadTripFromFolder(dirHandle) {
@@ -1263,11 +1260,69 @@ fileInput.addEventListener('change', e => {
   if (file) loadFileAndTryAutoLoadDocs(file);
 });
 
+// webkitdirectory fallback (iOS Safari, Firefox): reads entire folder recursively
+fileInputDir.addEventListener('change', e => {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  loadTripFromFileList(files);
+});
+
+function loadTripFromFileList(files) {
+  // webkitRelativePath gives us "FolderName/subfolder/file.pdf"
+  // We need to strip the root folder name to get relative paths
+  let jsonFile = null;
+  let jsonRelPath = '';
+  const docFiles = [];
+  
+  for (const file of files) {
+    // Get path relative to the selected folder (strip root folder name)
+    const relPath = file.webkitRelativePath
+      ? file.webkitRelativePath.split('/').slice(1).join('/')
+      : file.name;
+    
+    if (file.name.toLowerCase().endsWith('.json')) {
+      const name = file.name.toLowerCase();
+      if (!jsonFile || name.includes('trip') || name.includes('config')) {
+        if (jsonFile) docFiles.push({ file: jsonFile, relPath: jsonRelPath });
+        jsonFile = file;
+        jsonRelPath = relPath;
+      } else {
+        docFiles.push({ file, relPath });
+      }
+    } else {
+      docFiles.push({ file, relPath });
+    }
+  }
+  
+  if (!jsonFile) {
+    alert('No JSON config file found in this folder.\nPlease select a folder containing your trip-config.json file.');
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      initTrip(data);
+      
+      // Load all docs with their relative paths for subfolder matching
+      if (docFiles.length > 0) {
+        loadDocsFromFileList(docFiles);
+        updateDocsButtonState();
+      }
+    } catch (err) {
+      alert('Invalid JSON in ' + jsonFile.name + ': ' + err.message);
+    }
+  };
+  reader.readAsText(jsonFile);
+}
+
 loadSampleBtn.addEventListener('click', loadSampleTrip);
 changeTripBtn.addEventListener('click', () => {
   pickerView.classList.remove('hidden');
   tripView.classList.add('hidden');
   fileInput.value = '';
+  fileInputDir.value = '';
   closeDocsPanel();
   // Clean up blob URLs
   LOADED_DOCS.forEach(url => URL.revokeObjectURL(url));
@@ -1298,8 +1353,14 @@ loadDocsBtn.addEventListener('click', () => {
   }
 });
 
+const docsDirInput = document.createElement('input');
+docsDirInput.type = 'file';
+docsDirInput.setAttribute('webkitdirectory', '');
+docsDirInput.style.display = 'none';
+document.body.appendChild(docsDirInput);
+
 selectFolderBtn.addEventListener('click', async () => {
-  if ('showDirectoryPicker' in window) {
+  if (FOLDER_PICKER_SUPPORTED) {
     try {
       const dirHandle = await window.showDirectoryPicker();
       JSON_DIR_HANDLE = dirHandle;
@@ -1310,8 +1371,23 @@ selectFolderBtn.addEventListener('click', async () => {
       if (e.name !== 'AbortError') console.log('Folder picker error:', e);
     }
   } else {
-    alert('Folder selection not supported on this browser. Please use "Select Files" instead.');
+    // Fallback: webkitdirectory input for iOS/Safari
+    docsDirInput.click();
   }
+});
+
+docsDirInput.addEventListener('change', e => {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  const docEntries = files.map(file => ({
+    file,
+    relPath: file.webkitRelativePath
+      ? file.webkitRelativePath.split('/').slice(1).join('/')
+      : file.name
+  }));
+  loadDocsFromFileList(docEntries);
+  updateDocsButtonState();
+  renderDocsList();
 });
 
 selectFilesBtn.addEventListener('click', () => {
@@ -1369,7 +1445,24 @@ async function loadDocsFromFolder(dirHandle, path = '') {
 
 function loadDocsFromFiles(files) {
   for (const file of files) {
-    LOADED_DOCS.set(file.name.toLowerCase(), URL.createObjectURL(file));
+    const url = URL.createObjectURL(file);
+    LOADED_DOCS.set(file.name.toLowerCase(), url);
+    // Also store with webkitRelativePath if available (for subfolder matching)
+    if (file.webkitRelativePath) {
+      const relPath = file.webkitRelativePath.split('/').slice(1).join('/');
+      if (relPath) LOADED_DOCS.set(relPath.toLowerCase(), url);
+    }
+  }
+}
+
+function loadDocsFromFileList(entries) {
+  // entries = [{ file, relPath }, ...] where relPath preserves subfolder structure
+  for (const { file, relPath } of entries) {
+    const url = URL.createObjectURL(file);
+    // Store by basename (for simple lookups)
+    LOADED_DOCS.set(file.name.toLowerCase(), url);
+    // Store by relative path (for subfolder matching like "Insurance/file.pdf")
+    if (relPath) LOADED_DOCS.set(relPath.toLowerCase(), url);
   }
 }
 
