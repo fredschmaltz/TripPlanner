@@ -1001,6 +1001,104 @@ header .subtitle {
 }
 
 /* ══════════════════════════════════════════
+   DOCUMENTS PANEL
+══════════════════════════════════════════ */
+.docs-panel {
+  position: fixed;
+  top: 70px;
+  right: 16px;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  max-height: 70vh;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.docs-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.docs-panel-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.docs-panel-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.docs-panel-close:hover { color: var(--text); background: var(--border); }
+.docs-panel-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.docs-action-btn {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.docs-action-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.docs-panel-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+.doc-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.doc-item:hover { background: var(--surface2); }
+.doc-item.loaded { opacity: 0.6; }
+.doc-item.loaded .doc-status { color: #6fcf97; }
+.doc-item.missing .doc-status { color: #e8a85a; }
+.doc-status { font-size: 0.9rem; flex-shrink: 0; }
+.doc-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+.doc-folder {
+  font-size: 0.65rem;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════
    HIDDEN STATE
 ══════════════════════════════════════════ */
 .hidden { display: none !important; }
@@ -1014,9 +1112,9 @@ header .subtitle {
   <p class="picker-subtitle">Your personal travel timeline · No data uploaded to servers</p>
   
   <div class="picker-box" id="picker-box">
-    <div class="picker-icon">📋</div>
-    <div class="picker-label">Select your trip JSON file</div>
-    <div class="picker-hint">Drag &amp; drop or click to browse</div>
+    <div class="picker-icon">📁</div>
+    <div class="picker-label" id="picker-label">Select your trip folder</div>
+    <div class="picker-hint" id="picker-hint">Contains your JSON config + documents</div>
     <input type="file" accept=".json" class="picker-input" id="file-input">
   </div>
   
@@ -1039,6 +1137,22 @@ header .subtitle {
 <!-- Trip View (shown when data loaded) -->
 <div id="trip-view" class="hidden">
   <button class="change-trip-btn" id="change-trip-btn">📋 Change Trip</button>
+  <button class="change-trip-btn" id="load-docs-btn" style="right:130px;display:none">📎 Load Documents</button>
+  <input type="file" id="docs-input" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" style="display:none">
+  
+  <!-- Missing files panel -->
+  <div id="docs-panel" class="docs-panel hidden">
+    <div class="docs-panel-header">
+      <span class="docs-panel-title">📎 Documents</span>
+      <button class="docs-panel-close" onclick="closeDocsPanel()">✕</button>
+    </div>
+    <div class="docs-panel-actions">
+      <button class="docs-action-btn" id="select-folder-btn">📁 Select Folder</button>
+      <button class="docs-action-btn" id="select-files-btn">📄 Select Files</button>
+    </div>
+    <div class="docs-panel-list" id="docs-list"></div>
+  </div>
+  
   <div id="card-overlay"></div>
   <header id="trip-header"></header>
   <div class="legend" id="trip-legend"></div>
@@ -1053,6 +1167,10 @@ let TRIP_CONFIG = null;
 let DAYS = [];
 let ATTACHMENTS_BASE = '';
 
+// Document storage - maps filename to blob URL
+const LOADED_DOCS = new Map();
+let ALL_REQUIRED_FILES = [];
+
 // ════════════════════════════════════════════════════════
 //  FILE PICKER
 // ════════════════════════════════════════════════════════
@@ -1063,19 +1181,86 @@ const fileInput = document.getElementById('file-input');
 const loadSampleBtn = document.getElementById('load-sample');
 const changeTripBtn = document.getElementById('change-trip-btn');
 
-pickerBox.addEventListener('click', () => fileInput.click());
+// Check if folder picker is supported (Chrome/Edge)
+const FOLDER_PICKER_SUPPORTED = 'showDirectoryPicker' in window;
+
+// Update UI based on browser support
+if (!FOLDER_PICKER_SUPPORTED) {
+  document.getElementById('picker-label').textContent = 'Select your trip JSON file';
+  document.getElementById('picker-hint').textContent = 'Drag & drop or click to browse';
+  document.querySelector('#picker-box .picker-icon').textContent = '📋';
+}
+
+pickerBox.addEventListener('click', async () => {
+  // Try folder picker first (Chrome/Edge) - loads JSON + docs in one step
+  if (FOLDER_PICKER_SUPPORTED) {
+    try {
+      const dirHandle = await window.showDirectoryPicker();
+      await loadTripFromFolder(dirHandle);
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+      console.log('Folder picker failed, falling back to file picker');
+    }
+  }
+  // Fallback: file picker (iOS/Safari)
+  fileInput.click();
+});
+
+async function loadTripFromFolder(dirHandle) {
+  JSON_DIR_HANDLE = dirHandle;
+  
+  // First, scan for JSON config file
+  let jsonFile = null;
+  let jsonFileName = null;
+  
+  for await (const entry of dirHandle.values()) {
+    if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.json')) {
+      // Prefer trip-config.json or similar names
+      const name = entry.name.toLowerCase();
+      if (!jsonFile || name.includes('trip') || name.includes('config')) {
+        jsonFile = await entry.getFile();
+        jsonFileName = entry.name;
+      }
+    }
+  }
+  
+  if (!jsonFile) {
+    alert('No JSON config file found in this folder.\nPlease select a folder containing your trip-config.json file.');
+    return;
+  }
+  
+  // Load and parse the JSON
+  const text = await jsonFile.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (err) {
+    alert('Invalid JSON in ' + jsonFileName + ': ' + err.message);
+    return;
+  }
+  
+  // Initialize trip (this populates ALL_REQUIRED_FILES)
+  initTrip(data);
+  
+  // Now load all documents from the folder
+  if (ALL_REQUIRED_FILES.length > 0) {
+    await loadDocsFromFolder(dirHandle);
+    updateDocsButtonState();
+  }
+}
 pickerBox.addEventListener('dragover', e => { e.preventDefault(); pickerBox.classList.add('dragover'); });
 pickerBox.addEventListener('dragleave', () => pickerBox.classList.remove('dragover'));
 pickerBox.addEventListener('drop', e => {
   e.preventDefault();
   pickerBox.classList.remove('dragover');
   const file = e.dataTransfer.files[0];
-  if (file) loadFile(file);
+  if (file) loadFileAndTryAutoLoadDocs(file);
 });
 
 fileInput.addEventListener('change', e => {
   const file = e.target.files[0];
-  if (file) loadFile(file);
+  if (file) loadFileAndTryAutoLoadDocs(file);
 });
 
 loadSampleBtn.addEventListener('click', loadSampleTrip);
@@ -1083,7 +1268,207 @@ changeTripBtn.addEventListener('click', () => {
   pickerView.classList.remove('hidden');
   tripView.classList.add('hidden');
   fileInput.value = '';
+  closeDocsPanel();
+  // Clean up blob URLs
+  LOADED_DOCS.forEach(url => URL.revokeObjectURL(url));
+  LOADED_DOCS.clear();
+  ALL_REQUIRED_FILES = [];
+  JSON_DIR_HANDLE = null;
 });
+
+// ════════════════════════════════════════════════════════
+//  DOCUMENT LOADING
+// ════════════════════════════════════════════════════════
+const loadDocsBtn = document.getElementById('load-docs-btn');
+const docsInput = document.getElementById('docs-input');
+const docsPanel = document.getElementById('docs-panel');
+const docsList = document.getElementById('docs-list');
+const selectFolderBtn = document.getElementById('select-folder-btn');
+const selectFilesBtn = document.getElementById('select-files-btn');
+
+let JSON_DIR_HANDLE = null;
+
+loadDocsBtn.addEventListener('click', () => {
+  // Toggle panel
+  if (docsPanel.classList.contains('hidden')) {
+    renderDocsList();
+    docsPanel.classList.remove('hidden');
+  } else {
+    docsPanel.classList.add('hidden');
+  }
+});
+
+selectFolderBtn.addEventListener('click', async () => {
+  if ('showDirectoryPicker' in window) {
+    try {
+      const dirHandle = await window.showDirectoryPicker();
+      JSON_DIR_HANDLE = dirHandle;
+      await loadDocsFromFolder(dirHandle);
+      updateDocsButtonState();
+      renderDocsList();
+    } catch (e) {
+      if (e.name !== 'AbortError') console.log('Folder picker error:', e);
+    }
+  } else {
+    alert('Folder selection not supported on this browser. Please use "Select Files" instead.');
+  }
+});
+
+selectFilesBtn.addEventListener('click', () => {
+  docsInput.click();
+});
+
+docsInput.addEventListener('change', e => {
+  const files = e.target.files;
+  if (files.length) {
+    loadDocsFromFiles(files);
+    updateDocsButtonState();
+    renderDocsList();
+  }
+});
+
+function closeDocsPanel() {
+  docsPanel.classList.add('hidden');
+}
+
+async function loadFileAndTryAutoLoadDocs(file) {
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      initTrip(data);
+      
+      // Try to auto-load docs from JSON directory if we have access
+      if (JSON_DIR_HANDLE && ALL_REQUIRED_FILES.length > 0) {
+        try {
+          await loadDocsFromFolder(JSON_DIR_HANDLE);
+          updateDocsButtonState();
+        } catch (err) {
+          console.log('Could not auto-load docs:', err);
+        }
+      }
+    } catch (err) {
+      alert('Invalid JSON file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function loadDocsFromFolder(dirHandle, path = '') {
+  for await (const entry of dirHandle.values()) {
+    if (entry.kind === 'file') {
+      const file = await entry.getFile();
+      const key = path ? `${path}/${entry.name}` : entry.name;
+      LOADED_DOCS.set(entry.name.toLowerCase(), URL.createObjectURL(file));
+      LOADED_DOCS.set(key.toLowerCase(), URL.createObjectURL(file));
+    } else if (entry.kind === 'directory') {
+      await loadDocsFromFolder(entry, path ? `${path}/${entry.name}` : entry.name);
+    }
+  }
+}
+
+function loadDocsFromFiles(files) {
+  for (const file of files) {
+    LOADED_DOCS.set(file.name.toLowerCase(), URL.createObjectURL(file));
+  }
+}
+
+function renderDocsList() {
+  if (!ALL_REQUIRED_FILES.length) {
+    docsList.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted)">No documents referenced</div>';
+    return;
+  }
+  
+  const items = ALL_REQUIRED_FILES.map(filepath => {
+    const isLoaded = !!getDocUrl(filepath);
+    const basename = filepath.split('/').pop();
+    const folder = filepath.includes('/') ? filepath.split('/')[0] : '';
+    return `
+      <div class="doc-item ${isLoaded ? 'loaded' : 'missing'}" onclick="clickDocItem('${filepath.replace(/'/g, "\\'")}', ${isLoaded})">
+        <span class="doc-status">${isLoaded ? '✓' : '○'}</span>
+        <span class="doc-name" title="${basename}">${basename}</span>
+        ${folder ? `<span class="doc-folder">${folder}</span>` : ''}
+      </div>`;
+  }).join('');
+  
+  const loadedCount = ALL_REQUIRED_FILES.filter(f => getDocUrl(f)).length;
+  const summary = `<div style="padding:8px 10px;font-size:0.72rem;color:var(--muted);border-bottom:1px solid var(--border)">
+    ${loadedCount}/${ALL_REQUIRED_FILES.length} documents loaded
+  </div>`;
+  
+  docsList.innerHTML = summary + items;
+}
+
+function clickDocItem(filepath, isLoaded) {
+  if (isLoaded) {
+    openDoc(filepath);
+  } else {
+    // Prompt to select this specific file
+    const basename = filepath.split('/').pop();
+    const tempInput = document.createElement('input');
+    tempInput.type = 'file';
+    tempInput.accept = '.pdf,.jpg,.jpeg,.png,.webp';
+    tempInput.onchange = e => {
+      const file = e.target.files[0];
+      if (file) {
+        LOADED_DOCS.set(file.name.toLowerCase(), URL.createObjectURL(file));
+        LOADED_DOCS.set(basename.toLowerCase(), URL.createObjectURL(file));
+        updateDocsButtonState();
+        renderDocsList();
+      }
+    };
+    tempInput.click();
+  }
+}
+
+function updateDocsButtonState() {
+  const total = ALL_REQUIRED_FILES.length;
+  if (total === 0) {
+    loadDocsBtn.textContent = '📎 No Docs';
+    loadDocsBtn.style.borderColor = 'var(--border2)';
+    loadDocsBtn.style.color = 'var(--muted)';
+  } else {
+    const matched = ALL_REQUIRED_FILES.filter(f => getDocUrl(f)).length;
+    if (matched >= total) {
+      loadDocsBtn.textContent = `📎 ${total} Loaded ✓`;
+      loadDocsBtn.style.borderColor = '#6fcf97';
+      loadDocsBtn.style.color = '#6fcf97';
+    } else if (matched === 0) {
+      loadDocsBtn.textContent = `📎 Load ${total} Doc${total > 1 ? 's' : ''}`;
+      loadDocsBtn.style.borderColor = '#e8a85a';
+      loadDocsBtn.style.color = '#e8a85a';
+    } else {
+      loadDocsBtn.textContent = `📎 ${matched}/${total}`;
+      loadDocsBtn.style.borderColor = '#e8a85a';
+      loadDocsBtn.style.color = '#e8a85a';
+    }
+  }
+}
+
+function getDocUrl(filename) {
+  const lower = filename.toLowerCase();
+  if (LOADED_DOCS.has(lower)) return LOADED_DOCS.get(lower);
+  const basename = lower.split('/').pop();
+  if (LOADED_DOCS.has(basename)) return LOADED_DOCS.get(basename);
+  return null;
+}
+
+function openDoc(filename, event) {
+  if (event) event.stopPropagation();
+  const url = getDocUrl(filename);
+  if (url) {
+    window.open(url, '_blank');
+  } else {
+    // Open the panel to show missing files
+    if (!docsPanel.classList.contains('hidden')) {
+      // Already open, maybe highlight the missing file
+    } else {
+      renderDocsList();
+      docsPanel.classList.remove('hidden');
+    }
+  }
+  return false;
+}
 
 function loadFile(file) {
   const reader = new FileReader();
@@ -1168,8 +1553,15 @@ function initTrip(data) {
   DAYS = data.days || [];
   ATTACHMENTS_BASE = data.attachmentsBasePath || '';
   
+  // Collect all referenced files
+  ALL_REQUIRED_FILES = collectAllFiles(data);
+  
   pickerView.classList.add('hidden');
   tripView.classList.remove('hidden');
+  
+  // Show/hide load docs button
+  loadDocsBtn.style.display = ALL_REQUIRED_FILES.length > 0 ? 'flex' : 'none';
+  updateDocsButtonState();
   
   renderHeader();
   renderLegend();
@@ -1183,6 +1575,29 @@ function initTrip(data) {
   positionRailLines();
   window.addEventListener('scroll', positionRailLines, { passive: true });
   window.addEventListener('resize', positionRailLines);
+}
+
+function collectAllFiles(data) {
+  const files = new Set();
+  const trip = data.trip || {};
+  
+  // Header files
+  if (trip.esim?.file) files.add(trip.esim.file);
+  (trip.insurance?.certificates || []).forEach(c => c.file && files.add(c.file));
+  (trip.customs?.documents || []).forEach(d => d.file && files.add(d.file));
+  
+  // Day files  
+  for (const day of data.days || []) {
+    for (const f of day.files || []) {
+      if (f.name) {
+        const cat = f.cat || 'other';
+        const folder = CAT_FOLDER[cat] || 'Other';
+        files.add(`${folder}/${f.name}`);
+      }
+    }
+  }
+  
+  return [...files];
 }
 
 // ════════════════════════════════════════════════════════
@@ -1204,8 +1619,8 @@ function renderHeader() {
   let badgesHTML = '<div class="header-badges">';
   if (trip.esim) {
     const esim = trip.esim;
-    const href = esim.file ? `href="${ATTACHMENTS_BASE}${esim.file}" target="_blank"` : '';
-    badgesHTML += `<a class="esim-badge" ${href} style="cursor:pointer;text-decoration:none">
+    const onclick = esim.file ? `onclick="return openDoc('${esim.file.replace(/'/g,"\\'")}', event)"` : '';
+    badgesHTML += `<a class="esim-badge" href="#" ${onclick} style="cursor:pointer;text-decoration:none">
       📶 ${esim.label}
       ${esim.price ? `<span class="tag tag-price">${esim.price}</span>` : ''}
       ${esim.status === 'paid' ? '<span class="tag tag-paid">Paid</span>' : ''}
@@ -1214,14 +1629,14 @@ function renderHeader() {
   if (trip.insurance) {
     badgesHTML += `<span class="esim-badge insurance-badge" style="gap:6px">🛡️ ${trip.insurance.label}`;
     (trip.insurance.certificates || []).forEach(cert => {
-      badgesHTML += `<a href="${ATTACHMENTS_BASE}${cert.file}" target="_blank" class="tag tag-country" title="${cert.title}">${cert.flag}</a>`;
+      badgesHTML += `<a href="#" onclick="return openDoc('${cert.file.replace(/'/g,"\\'")}', event)" class="tag tag-country" title="${cert.title}">${cert.flag}</a>`;
     });
     badgesHTML += '</span>';
   }
   if (trip.customs) {
     badgesHTML += `<span class="esim-badge" style="border-color:#8a6020;gap:6px">🛃 ${trip.customs.label}`;
     (trip.customs.documents || []).forEach(doc => {
-      badgesHTML += `<a href="${ATTACHMENTS_BASE}${doc.file}" target="_blank" class="tag tag-country" title="${doc.title}">${doc.flag}</a>`;
+      badgesHTML += `<a href="#" onclick="return openDoc('${doc.file.replace(/'/g,"\\'")}', event)" class="tag tag-country" title="${doc.title}">${doc.flag}</a>`;
     });
     badgesHTML += '</span>';
   }
@@ -1327,10 +1742,10 @@ const CAT_FOLDER = { activity:'Activity', stay:'Stay', transport:'Transportation
 
 function renderFileRow(f) {
   const cat = f.cat || 'other';
-  const relPath = ATTACHMENTS_BASE + (CAT_FOLDER[cat] || 'Other') + '/' + f.name;
+  const relPath = (CAT_FOLDER[cat] || 'Other') + '/' + f.name;
   const ext = f.name.split('.').pop().toUpperCase();
   const displayName = f.label || f.name.replace(/\.[^.]+$/, '').replace(/[-_]/g,' ');
-  return `<a class="file-row" href="${relPath}" target="_blank" onclick="event.stopPropagation()">
+  return `<a class="file-row" href="#" onclick="return openDoc('${relPath.replace(/'/g,"\\'")}', event)">
     <span class="file-cat file-cat-${cat}">${CAT_LABEL[cat]||cat}</span>
     <span class="file-name">${displayName}</span>
     <span class="file-ext">.${ext}</span>
@@ -1893,6 +2308,11 @@ document.getElementById('card-overlay').addEventListener('click', function() {
     this.classList.remove('active');
   }
 });
+
+// Expose to window for HTML onclick attributes
+window.closeDocsPanel = closeDocsPanel;
+window.clickDocItem = clickDocItem;
+window.openDoc = openDoc;
 </script>
 </body>
 </html>
