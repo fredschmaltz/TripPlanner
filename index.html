@@ -9,6 +9,26 @@
 </head>
 <body>
 
+<div class="tp-settings-wrap" id="tp-settings-wrap">
+  <button class="tp-settings-btn" onclick="toggleSettingsPopover()" title="Settings">⚙</button>
+  <div class="tp-settings-popover hidden" id="tp-settings-popover">
+    <div class="tp-settings-group">
+      <span class="tp-settings-label" id="tp-lbl-theme">Theme</span>
+      <div class="tp-toggle-row">
+        <button class="tp-theme-btn active" data-theme="dark" onclick="setTheme('dark')">Dark</button>
+        <button class="tp-theme-btn" data-theme="light" onclick="setTheme('light')">Light</button>
+      </div>
+    </div>
+    <div class="tp-settings-group">
+      <span class="tp-settings-label" id="tp-lbl-lang">Language</span>
+      <div class="tp-toggle-row">
+        <button class="tp-lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+        <button class="tp-lang-btn" data-lang="pt-BR" onclick="setLanguage('pt-BR')">PT-BR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="picker-view" class="picker-container">
   <h1 class="picker-title">Trip <em>Planner</em></h1>
   <p class="picker-subtitle">Your personal travel timeline &middot; No data uploaded to servers</p>
@@ -28,9 +48,11 @@
 </div>
 
 <div id="trip-view" class="hidden">
-  <button class="change-trip-btn btn-change" id="change-trip-btn" title="Change Trip"></button>
-  <button class="change-trip-btn btn-edit" id="edit-trip-btn" title="Edit Trip"></button>
-  <button class="change-trip-btn btn-docs" id="load-docs-btn" title="Load Documents"></button>
+  <div class="trip-actions-bar" id="trip-actions-bar">
+    <button class="trip-action-btn btn-docs" id="load-docs-btn" title="Load Documents"></button>
+    <button class="trip-action-btn btn-edit" id="edit-trip-btn" title="Edit Trip"></button>
+    <button class="trip-action-btn btn-change" id="change-trip-btn" title="Change Trip"></button>
+  </div>
   <input type="file" id="docs-input" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" class="hidden-input" aria-label="Select documents">
   <div id="docs-panel" class="docs-panel hidden">
     <div class="docs-panel-header">
@@ -63,6 +85,7 @@
   <div class="editor-body" id="editor-body"></div>
 </div>
 
+<script src="js/i18n.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/display.js"></script>
 <script src="js/editor.js"></script>
