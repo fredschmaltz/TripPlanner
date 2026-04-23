@@ -168,21 +168,10 @@ function renderCard(c, dayColor, dayFiles, cityPill) {
   if (c.phone) quickBtns.push(`<a class="card-quick-btn" href="tel:${c.phone}" onclick="event.stopPropagation()">📱</a>`);
   if (c.email) quickBtns.push(`<a class="card-quick-btn" href="mailto:${c.email}" onclick="event.stopPropagation()">✉️</a>`);
 
-  return `
-  <div class="card" style="--card-color:${colorVar}" data-type="${c.type}">
-    <div class="card-collapsed">
-      <div class="card-time-col">${c.time || ''}</div>
-      <div class="card-icon">${c.icon || '📌'}</div>
-      <div class="card-main">
-        <div class="card-type-label">${meta.label}</div>
-        ${collapsedInner}
-      </div>
-      <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
-        ${tags.map(renderTag).join('')}
-        ${fileCountBadge}
-        ${quickBtns.join('')}
-      </div>
-    </div>
+  const isTransport = c.type === 'flight' || c.type === 'transit' || c.type === 'bus' || c.type === 'ferry' || c.type === 'taxi';
+
+  // Shared expanded HTML (same for all card styles)
+  const expandedHTML = `
     <div class="card-expanded">
       <div class="exp-header">
         <div class="exp-icon">${c.icon || '📌'}</div>
@@ -199,7 +188,80 @@ function renderCard(c, dayColor, dayFiles, cityPill) {
       ${tags.length ? `<div class="exp-tags">${tags.map(renderTag).join('')}</div>` : ''}
       ${tipsHTML}
       <button class="card-close-btn" onclick="collapseCard(event)">${t('card.collapse')}</button>
+    </div>`;
+
+  const style = currentCardStyle || 'classic';
+
+  // ── Bento Grid style ──
+  if (style === 'bento') {
+    const wide = (isTransport || c.type === 'stay') ? ' bento-wide' : '';
+    const routeHTML = isTransport
+      ? `<div class="bento-route"><span>${c.from || ''}</span><span class="bento-route-arrow"></span><span>${c.to || ''}</span></div>`
+      : `<div class="bento-icon">${c.icon || '📌'}</div><div class="bento-title">${c.title}</div>`;
+    const subHTML = (!isTransport && c.sub) ? `<div class="bento-sub">${c.sub}</div>`
+      : (isTransport && c.carrier) ? `<div class="bento-sub">${c.carrier}</div>` : '';
+    return `
+    <div class="card${wide}" style="--card-color:${colorVar}" data-type="${c.type}">
+      <div class="card-collapsed bento-collapsed">
+        <div class="bento-top">
+          <span class="bento-badge" style="color:${colorVar}"><span class="bento-dot" style="background:${colorVar}"></span>${meta.label}</span>
+          <span class="bento-time">${c.time || ''}</span>
+        </div>
+        ${routeHTML}
+        ${subHTML}
+        <div class="bento-meta">
+          ${tags.map(tg => `<span class="bento-chip bento-chip-${tg.cls || 'default'}">${tg.label}</span>`).join('')}
+          ${fileCountBadge}
+          ${quickBtns.join('')}
+        </div>
+      </div>
+      ${expandedHTML}
+    </div>`;
+  }
+
+  // ── Minimal Line style ──
+  if (style === 'minimal') {
+    const mTitle = isTransport ? `${c.from || ''} → ${c.to || ''}` : c.title;
+    const mSub = isTransport
+      ? [c.carrier, meta.label].filter(Boolean).join(' · ')
+      : (c.sub || meta.label);
+    return `
+    <div class="card" style="--card-color:${colorVar}" data-type="${c.type}">
+      <div class="card-collapsed minimal-collapsed">
+        <span class="minimal-time">${c.time || ''}</span>
+        <span class="minimal-dot" style="background:${colorVar}"></span>
+        <div class="minimal-body">
+          <div class="minimal-title">${mTitle}</div>
+          <div class="minimal-sub">${mSub}</div>
+        </div>
+        <div class="minimal-pills">
+          ${tags.map(renderTag).join('')}
+          ${fileCountBadge}
+        </div>
+        ${quickBtns.join('')}
+        <span class="minimal-arrow">→</span>
+      </div>
+      ${expandedHTML}
+    </div>`;
+  }
+
+  // ── Classic style (default) ──
+  return `
+  <div class="card" style="--card-color:${colorVar}" data-type="${c.type}">
+    <div class="card-collapsed">
+      <div class="card-time-col">${c.time || ''}</div>
+      <div class="card-icon">${c.icon || '📌'}</div>
+      <div class="card-main">
+        <div class="card-type-label">${meta.label}</div>
+        ${collapsedInner}
+      </div>
+      <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+        ${tags.map(renderTag).join('')}
+        ${fileCountBadge}
+        ${quickBtns.join('')}
+      </div>
     </div>
+    ${expandedHTML}
   </div>`;
 }
 
