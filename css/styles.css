@@ -39,6 +39,7 @@ body {
   color: var(--text);
   min-height: 100vh;
   line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ── Scrollbar ── */
@@ -729,14 +730,157 @@ header .subtitle {
 }
 
 /* ══════════════════════════════════════════
-   RESPONSIVE
+   RESPONSIVE — Tablet
+══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Settings & action bar */
+  .tp-settings-wrap { top: 10px; right: 10px; }
+  .trip-actions-bar { right: 50px; top: 10px; gap: 6px; }
+  .trip-action-btn { padding: 6px 12px; font-size: 0.75rem; }
+
+  /* Header */
+  header { padding: 48px 16px 32px; }
+  header h1 { font-size: clamp(1.6rem, 5vw, 2.4rem); }
+
+  /* Timeline */
+  .timeline { padding: 24px 10px 60px; }
+  .timeline-with-rail { padding-left: 32px; }
+
+  /* Country rail */
+  .country-rail-label { width: 22px; font-size: 0.52rem; }
+
+  /* Docs panel */
+  .docs-panel { top: 56px; right: 10px; width: 280px; }
+}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE — Mobile
 ══════════════════════════════════════════ */
 @media (max-width: 560px) {
-  .card-collapsed { height: auto; min-height: var(--card-h); padding: 10px 12px; flex-wrap: wrap; }
-  .card-tags { width: 100%; }
-  .transport-inline { flex-wrap: wrap; }
-  .food-panel-inner { grid-template-columns: 1fr; }
+  /* ── Settings gear ── */
+  .tp-settings-wrap { top: 8px; right: 8px; }
+  .tp-settings-btn { width: 32px; height: 32px; font-size: 0.95rem; }
+  .tp-settings-popover { min-width: 160px; padding: 10px 12px; }
+
+  /* ── Action buttons ── */
+  .trip-actions-bar {
+    right: 44px;
+    top: 8px;
+    gap: 4px;
+  }
+  .trip-action-btn {
+    padding: 5px 10px;
+    font-size: 0.7rem;
+    border-radius: 6px;
+    gap: 4px;
+  }
+
+  /* ── Picker ── */
+  .picker-container { padding: 24px 14px; }
+  .picker-box { padding: 32px 20px; border-radius: 12px; }
+  .picker-icon { font-size: 2.4rem; margin-bottom: 12px; }
+  .picker-label { font-size: 0.95rem; }
+  .picker-features { gap: 8px; margin-top: 24px; }
+  .feature-pill { padding: 5px 10px; font-size: 0.7rem; }
+
+  /* ── Header ── */
+  header { padding: 40px 14px 28px; }
+  header h1 { font-size: clamp(1.4rem, 6vw, 2rem); }
+  header .subtitle { font-size: 0.72rem; letter-spacing: 0.5px; }
+  .route-pills { gap: 3px; margin-top: 14px; }
+  .route-pill { font-size: 0.62rem; padding: 2px 7px; }
+  .header-badges { gap: 6px; margin-top: 12px; }
+  .esim-badge { padding: 5px 10px; font-size: 0.7rem; gap: 6px; }
+
+  /* ── Legend ── */
+  .legend { padding: 10px 12px; gap: 6px; }
+  .legend-item { font-size: 0.62rem; gap: 3px; }
+  .legend-dot { width: 6px; height: 6px; }
+
+  /* ── Timeline ── */
+  .timeline { padding: 16px 8px 60px; }
+  .timeline-with-rail { padding-left: 28px; }
+  .timeline-rail-line { left: 22px; }
+  .country-rail-label { width: 20px; font-size: 0.5rem; letter-spacing: 0.6px; }
+
+  /* ── Country summary ── */
+  .country-summary-card { padding: 8px 10px; gap: 8px; }
+  .country-summary-name { font-size: 0.85rem; }
+  .country-stat { font-size: 0.6rem; padding: 1px 6px; }
+
+  /* ── Day block ── */
+  .day { border-radius: 10px; }
+  .day-header { padding: 10px 10px; gap: 6px; }
   .day-date { display: none; }
+  .day-title { font-size: 0.9rem; gap: 6px; }
+  .day-flag { font-size: 0.85rem; }
+  .day-controls { gap: 4px; }
+  .day-food-btn { padding: 3px 8px; font-size: 0.65rem; }
+  .day-food-btn .food-count { font-size: 0.58rem; padding: 0 4px; }
+  .day-summary { gap: 3px; }
+  .day-bubble { height: 20px; padding: 0 6px; font-size: 0.6rem; gap: 3px; }
+  .bubble-dot { width: 4px; height: 4px; }
+
+  /* ── Location group ── */
+  .location-header { padding: 7px 10px; gap: 8px; border-radius: 8px; }
+  .location-name { font-size: 0.85rem; }
+  .location-meta { font-size: 0.6rem; }
+
+  /* ── Cards ── */
+  .cards { padding: 6px 8px 8px; gap: 3px; }
+  .card { border-radius: 8px; }
+  .card-collapsed { height: auto; min-height: 56px; padding: 8px 10px; flex-wrap: wrap; gap: 8px; }
+  .card-time-col { min-width: 60px; font-size: 0.62rem; }
+  .card-icon { width: 24px; height: 24px; border-radius: 6px; font-size: 11px; }
+  .card-type-label { font-size: 0.52rem; letter-spacing: 0.6px; }
+  .card-title { font-size: 0.8rem; }
+  .card-sub-inline { font-size: 0.65rem; }
+  .card-tags { width: 100%; gap: 3px; }
+  .tag { font-size: 0.56rem; height: 18px; padding: 0 5px; border-radius: 4px; }
+  .transport-inline { flex-wrap: wrap; }
+  .transport-from, .transport-to { font-size: 0.75rem; }
+
+  /* ── Expanded card ── */
+  .card-expanded { padding: 10px 10px 8px; }
+  .exp-icon { width: 30px; height: 30px; border-radius: 7px; font-size: 14px; }
+  .exp-type { font-size: 0.56rem; }
+  .exp-title { font-size: 0.95rem; }
+  .exp-sub { font-size: 0.72rem; }
+  .exp-time { font-size: 0.65rem; padding: 3px 7px; }
+  .contact-row { padding: 6px 8px; gap: 6px; border-radius: 6px; }
+  .contact-label { font-size: 0.58rem; min-width: 32px; }
+  .contact-val { font-size: 0.72rem; }
+  .exp-tags { gap: 3px; margin-bottom: 8px; }
+  .tip-row { font-size: 0.72rem; }
+  .exp-route { padding: 8px 10px; gap: 8px; border-radius: 6px; }
+  .exp-route-from, .exp-route-to { font-size: 0.82rem; }
+
+  /* ── Food panel ── */
+  .food-panel-inner { grid-template-columns: 1fr; gap: 6px; padding: 10px 0 12px; }
+  .food-tip { padding: 8px 10px; gap: 8px; border-radius: 6px; }
+  .food-emoji { font-size: 1rem; }
+  .food-dish { font-size: 0.75rem; }
+  .food-desc { font-size: 0.68rem; }
+
+  /* ── File rows ── */
+  .file-row { padding: 6px 8px; gap: 6px; border-radius: 6px; }
+  .file-cat { font-size: 0.52rem; padding: 1px 4px; }
+  .file-name { font-size: 0.72rem; }
+
+  /* ── Docs panel ── */
+  .docs-panel {
+    top: 48px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-width: none;
+    max-height: 60vh;
+  }
+  .docs-panel-header { padding: 10px 12px; }
+  .docs-panel-title { font-size: 0.82rem; }
+
+  /* ── Quick buttons ── */
+  .card-quick-btn { width: 20px; height: 20px; border-radius: 5px; font-size: 0.65rem; }
 }
 
 /* ── overlay for click-outside collapse ── */
