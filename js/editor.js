@@ -262,6 +262,9 @@ async function saveTrip() {
     delete config.trip.customBadges;
   }
 
+  // Persist current card style preference
+  config.trip.cardStyle = currentCardStyle;
+
   const jsonStr = JSON.stringify(config, null, 2);
 
   // Try to save via File System Access API (overwrites trip-config.json)
