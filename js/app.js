@@ -6,6 +6,7 @@
 let TRIP_CONFIG = null;
 let DAYS = [];
 let ATTACHMENTS_BASE = '';
+let currentCardStyle = localStorage.getItem('tp-card-style') || 'classic';
 
 // Document storage – maps filename to blob URL
 const LOADED_DOCS = new Map();
@@ -446,6 +447,16 @@ function initTrip(data) {
   DAYS = data.days || [];
   ATTACHMENTS_BASE = data.attachmentsBasePath || '';
 
+  // Read card style from config (overrides localStorage)
+  if (TRIP_CONFIG.cardStyle) {
+    currentCardStyle = TRIP_CONFIG.cardStyle;
+    localStorage.setItem('tp-card-style', currentCardStyle);
+    document.documentElement.setAttribute('data-card-style', currentCardStyle);
+    document.querySelectorAll('.tp-style-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.style === currentCardStyle);
+    });
+  }
+
   populateCityColors(DAYS);
   ALL_REQUIRED_FILES = collectAllFiles(data);
 
@@ -509,6 +520,12 @@ function initSettingsBar() {
   document.querySelectorAll('.tp-lang-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.lang === currentLang);
   });
+  // Sync card style buttons
+  document.querySelectorAll('.tp-style-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.style === currentCardStyle);
+  });
+  // Apply card style attribute
+  document.documentElement.setAttribute('data-card-style', currentCardStyle);
   // Translate labels
   applySettingsLabels();
 }
@@ -517,6 +534,52 @@ function toggleSettingsPopover() {
   const pop = document.getElementById('tp-settings-popover');
   if (!pop) return;
   pop.classList.toggle('hidden');
+}
+
+// ─── Card Style ───
+function setCardStyle(style) {
+  currentCardStyle = style;
+  localStorage.setItem('tp-card-style', style);
+  document.documentElement.setAttribute('data-card-style', style);
+  // Update toggle button states
+  document.querySelectorAll('.tp-style-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.style === style);
+  });
+  // Re-render if trip is loaded
+  if (TRIP_CONFIG) {
+    renderTimeline();
+    positionRailLines();
+  }
+  // Auto-save to config JSON if file system available
+  autoSaveCardStyle(style);
+}
+
+async function autoSaveCardStyle(style) {
+  if (!JSON_DIR_HANDLE) return;
+  try {
+    // Read current config
+    let jsonFile = null;
+    for await (const entry of JSON_DIR_HANDLE.values()) {
+      if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.json')) {
+        const name = entry.name.toLowerCase();
+        if (!jsonFile || name.includes('trip') || name.includes('config')) {
+          jsonFile = entry;
+        }
+      }
+    }
+    if (!jsonFile) return;
+    const file = await jsonFile.getFile();
+    const data = JSON.parse(await file.text());
+    data.trip = data.trip || {};
+    data.trip.cardStyle = style;
+    // Write back
+    const fh = await JSON_DIR_HANDLE.getFileHandle(jsonFile.name, { create: false });
+    const writable = await fh.createWritable();
+    await writable.write(JSON.stringify(data, null, 2));
+    await writable.close();
+  } catch (e) {
+    // Silently fail — will be saved on next editor save
+  }
 }
 
 // Close popover when clicking outside
@@ -572,6 +635,7 @@ window.refreshCardBody = refreshCardBody;
 window.renderDocsList = renderDocsList;
 window.setTheme = setTheme;
 window.setLanguage = setLanguage;
+window.setCardStyle = setCardStyle;
 window.initSettingsBar = initSettingsBar;
 window.toggleSettingsPopover = toggleSettingsPopover;
 window.applySettingsLabels = applySettingsLabels;
