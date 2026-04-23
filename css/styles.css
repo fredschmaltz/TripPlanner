@@ -5,7 +5,7 @@
   --bg: #0b0c10;
   --surface: #13141a;
   --surface2: #1a1b23;
-  --border: #262730;
+  --borde8r: #262730;
   --border2: #32333f;
   --text: #e8e9f0;
   --muted: #6b6c7a;
@@ -1353,6 +1353,20 @@ header .subtitle {
 
 /* Light theme: tip text */
 [data-theme="light"] .tip-text { color: #4a4b60; }
+
+/* Light theme: file category badges */
+[data-theme="light"] .file-cat-activity     { background: #ece0f8; color: #6a3aa0; }
+[data-theme="light"] .file-cat-stay         { background: #d4f5e2; color: #1a6b3a; }
+[data-theme="light"] .file-cat-transport    { background: #d4eef8; color: #1a5a7a; }
+[data-theme="light"] .file-cat-insurance    { background: #f5d4e8; color: #8a2060; }
+[data-theme="light"] .file-cat-customs      { background: #f5edd4; color: #6a5020; }
+[data-theme="light"] .file-cat-other        { background: #e8e8e8; color: #555; }
+
+/* Light theme: file rows */
+[data-theme="light"] .file-row { background: #f0f8f8; border-color: #c0d8d8; }
+[data-theme="light"] .file-row:hover { background: #e0f0f0; border-color: #80b8b8; }
+[data-theme="light"] .exp-files-label { color: #2a6868; }
+[data-theme="light"] .file-open-btn { color: #2a6868; }
 
 /* ── Settings gear button + popover ── */
 .tp-settings-wrap {
