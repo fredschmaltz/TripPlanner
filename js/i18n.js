@@ -262,11 +262,15 @@ const TRANSLATIONS = {
   'default.travelInsurance':   'Travel Insurance',
   'default.customs':           'Customs',
 
-  // ─── Theme / Language UI ───
+  // ─── Theme / Language / Style UI ───
   'ui.theme':                  'Theme',
   'ui.language':               'Language',
   'ui.dark':                   'Dark',
   'ui.light':                  'Light',
+  'ui.cardStyle':              'Card Style',
+  'ui.classic':                'Classic',
+  'ui.bento':                  'Bento',
+  'ui.minimal':                'Minimal',
 
   // ─── Placeholders that contain example content ───
   'ph.subtitle':               'e.g. 28 April \u2013 22 May \u00B7 25 days \u00B7 6 cities',
@@ -542,11 +546,15 @@ const TRANSLATIONS_PTBR = {
   'default.travelInsurance':   'Seguro Viagem',
   'default.customs':           'Alf\u00E2ndega',
 
-  // ─── Theme / Language UI ───
+  // ─── Theme / Language / Style UI ───
   'ui.theme':                  'Tema',
   'ui.language':               'Idioma',
   'ui.dark':                   'Escuro',
   'ui.light':                  'Claro',
+  'ui.cardStyle':              'Estilo',
+  'ui.classic':                'Cl\u00E1ssico',
+  'ui.bento':                  'Bento',
+  'ui.minimal':                'Minimal',
 
   // ─── Placeholders ───
   'ph.subtitle':               'ex: 28 Abril \u2013 22 Maio \u00B7 25 dias \u00B7 6 cidades',
@@ -713,9 +721,16 @@ function applySettingsLabels() {
   if (lblTheme) lblTheme.textContent = t('ui.theme');
   const lblLang = document.getElementById('tp-lbl-lang');
   if (lblLang) lblLang.textContent = t('ui.language');
+  const lblStyle = document.getElementById('tp-lbl-style');
+  if (lblStyle) lblStyle.textContent = t('ui.cardStyle');
   // Update theme button text
   document.querySelectorAll('.tp-theme-btn').forEach(b => {
     b.textContent = b.dataset.theme === 'dark' ? t('ui.dark') : t('ui.light');
+  });
+  // Update card style button text
+  document.querySelectorAll('.tp-style-btn').forEach(b => {
+    const key = 'ui.' + b.dataset.style;
+    b.textContent = t(key);
   });
 }
 
