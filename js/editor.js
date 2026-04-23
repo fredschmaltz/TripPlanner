@@ -4,6 +4,7 @@
 
 let editorData = null;       // Working copy of the full config
 let pendingFiles = [];       // Files the user picked that may need copying
+let editorSnapshot = '';     // JSON snapshot at open time for dirty detection
 
 // ─── Route helpers ───
 const ROUTE_DEFAULT_COLORS = ['#aaaaaa','#f0c070','#e94560','#5ab4d4','#6fcf97','#b48ade','#e8a85a','#d47caf','#7c9fd4','#74c48a','#9090d4','#e87c5a'];
@@ -207,12 +208,26 @@ function openEditor(fromScratch) {
   const overlay = document.getElementById('editor-overlay');
   overlay.classList.remove('hidden');
   renderEditorForm();
+
+  // Capture snapshot for dirty detection
+  editorSnapshot = JSON.stringify(editorData);
 }
 
 function closeEditor() {
+  // Prompt if there are unsaved changes
+  if (editorData && JSON.stringify(editorData) !== editorSnapshot) {
+    if (!confirm(t('ed.discardChanges'))) return;
+  }
   document.getElementById('editor-overlay').classList.add('hidden');
   editorData = null;
   pendingFiles = [];
+  editorSnapshot = '';
+
+  // If no trip is loaded, go back to the picker
+  if (!TRIP_CONFIG) {
+    document.getElementById('trip-view').classList.add('hidden');
+    document.getElementById('picker-view').classList.remove('hidden');
+  }
 }
 
 // ─── Save ───
