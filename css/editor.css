@@ -19,7 +19,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
+  padding: 12px 60px 12px 20px;
   background: var(--surface);
   border-bottom: 1px solid var(--border2);
   flex-shrink: 0;
@@ -522,21 +522,159 @@
   margin-bottom: 4px;
 }
 
-/* ── Responsive ── */
-@media (max-width: 600px) {
+/* ── Responsive — Tablet ── */
+@media (max-width: 768px) {
   .editor-toolbar {
-    padding: 10px 12px;
-    flex-wrap: wrap;
+    padding: 10px 50px 10px 14px;
   }
   .editor-body {
-    padding: 12px;
+    padding: 14px;
   }
+  .editor-body-inner {
+    gap: 10px;
+  }
+}
+
+/* ── Responsive — Mobile ── */
+@media (max-width: 600px) {
+  .editor-toolbar {
+    padding: 8px 48px 8px 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .editor-toolbar-title { font-size: 0.9rem; }
+  .editor-toolbar-icon { font-size: 1rem; }
+  .editor-toolbar-right { gap: 6px; }
+  .editor-btn {
+    padding: 7px 12px;
+    font-size: 0.75rem;
+  }
+  .editor-body {
+    padding: 10px 8px;
+  }
+  .editor-body-inner {
+    gap: 8px;
+    padding-bottom: 40px;
+  }
+
+  /* Sections */
+  .editor-section { border-radius: 10px; }
+  .editor-section-header { padding: 10px 12px; gap: 8px; }
+  .editor-section-title { font-size: 0.82rem; }
+  .editor-section-body { padding: 10px 12px; }
+
+  /* Form fields */
   .editor-row {
     flex-direction: column;
+    gap: 0;
   }
+  .editor-row > .editor-field { margin-bottom: 10px; }
+  .editor-field { margin-bottom: 10px; }
+  .editor-label { font-size: 0.65rem; }
+  .editor-input,
+  .editor-select,
+  .editor-textarea {
+    font-size: 0.8rem;
+    padding: 6px 8px;
+    height: 34px;
+  }
+
+  /* Inline rows (route stops) */
+  .editor-inline-row {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+  }
+  .editor-flag-select {
+    min-width: 0;
+    flex: 1 1 100%;
+    font-size: 0.82rem;
+  }
+  .editor-inline-input.city-input {
+    flex: 1 1 60%;
+  }
+  .editor-color-input {
+    width: 34px;
+    height: 34px;
+  }
+
+  /* Buttons */
+  .editor-add-btn { font-size: 0.72rem; padding: 5px 10px; }
+  .editor-remove-btn,
+  .editor-move-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 0.7rem;
+  }
+
+  /* Day items */
+  .editor-day-item { border-radius: 8px; }
+  .editor-day-header { padding: 8px 10px; gap: 6px; }
+  .editor-day-title { font-size: 0.78rem; }
+  .editor-day-body { padding: 10px; }
   .editor-day-actions {
     flex-wrap: wrap;
+    gap: 3px;
   }
+
+  /* Card items */
+  .editor-card-item { border-radius: 6px; }
+  .editor-card-header { padding: 7px 8px; gap: 6px; }
+  .editor-card-title { font-size: 0.75rem; }
+  .editor-card-type-badge { font-size: 0.55rem; padding: 1px 4px; }
+  .editor-card-body { padding: 8px 10px; }
+  .editor-card-actions { gap: 2px; }
+
+  /* Badge items */
+  .editor-badge-item { padding: 10px; }
+  .editor-badge-header { gap: 6px; margin-bottom: 8px; }
+  .editor-badge-name { font-size: 0.82rem; }
+  .editor-badge-sub-item {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px;
+  }
+  .editor-badge-sub-item .editor-inline-input {
+    flex: 1 1 40%;
+    min-width: 0;
+  }
+  .editor-badge-sub-item .editor-inline-input.flag-input {
+    flex: 0 0 40px;
+  }
+
+  /* Tags & tips */
+  .editor-tag-row { gap: 4px; }
+  .editor-tag-type { width: 80px; }
+  .editor-tip-row { gap: 4px; }
+  .editor-tip-input { font-size: 0.78rem; }
+
+  /* Food row */
+  .editor-food-row { flex-wrap: wrap; gap: 6px; }
+  .editor-emoji-select { width: 48px; height: 34px; }
+
+  /* File row */
+  .editor-file-row {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .editor-file-row .editor-inline-input {
+    min-width: 0;
+  }
+
+  /* Sort bar */
+  .editor-sort-bar { gap: 4px; }
+  .editor-sort-btn { padding: 3px 7px; font-size: 0.65rem; }
+  .editor-sort-label { font-size: 0.62rem; }
+
+  /* Subsections */
+  .editor-subsection { margin-top: 10px; padding-top: 8px; }
+  .editor-subsection-title { font-size: 0.65rem; }
+
+  /* City selector */
+  .editor-city-dot { width: 12px; height: 12px; }
+
+  /* Toast */
+  .editor-toast { padding: 8px 18px; font-size: 0.78rem; bottom: 16px; }
 }
 
 /* ── Disabled section (no route) ── */
