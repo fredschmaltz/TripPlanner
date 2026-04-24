@@ -864,8 +864,18 @@ async function initDayMap(dayIndex) {
     return null;
   }
 
-  const points = [];
-  const trajectories = [];
+  // Haversine approximate distance in meters
+  function distM(a, b) {
+    const R = 6371000, toRad = v => v * Math.PI / 180;
+    const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
+    const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+
+  const MERGE_DIST = 200; // merge pins within 200 m
+  const allPoints = [];        // raw points (for merging into pins)
+  const routeSegments = [[]];  // walking-route segments (break at transports)
+  const trajectories = [];     // transport arcs
 
   for (const c of cards) {
     const meta = TYPE_META[c.type] || { label: c.type, color: '#888' };
@@ -874,57 +884,83 @@ async function initDayMap(dayIndex) {
     if (isTransportType(c.type) && (c.mapsFrom || c.mapsTo)) {
       const from = getCoords(c.mapsFrom);
       const to   = getCoords(c.mapsTo);
-      if (from) points.push({ lat: from.lat, lng: from.lng, title: mapsLabel(c.mapsFrom), icon: '📍', type: `${meta.label} – ${t('card.departure')}`, color, isTrajectory: true });
-      if (to)   points.push({ lat: to.lat,   lng: to.lng,   title: mapsLabel(c.mapsTo),   icon: '🏁', type: `${meta.label} – ${t('card.arrival')}`,   color, isTrajectory: true });
+      if (from) allPoints.push({ lat: from.lat, lng: from.lng, color, labels: [{ icon: '📍', title: mapsLabel(c.mapsFrom), type: `${meta.label} – ${t('card.departure')}` }] });
+      if (to)   allPoints.push({ lat: to.lat,   lng: to.lng,   color, labels: [{ icon: '🏁', title: mapsLabel(c.mapsTo),   type: `${meta.label} – ${t('card.arrival')}` }] });
       if (from && to) trajectories.push({ from, to, color });
+      // Close current walking segment with departure, then start new segment with arrival
+      if (from) routeSegments[routeSegments.length - 1].push(L.latLng(from.lat, from.lng));
+      if (routeSegments[routeSegments.length - 1].length > 0) routeSegments.push([]);
+      if (to) routeSegments[routeSegments.length - 1].push(L.latLng(to.lat, to.lng));
     } else {
       const pt = getCoords(c.maps);
-      if (pt) points.push({ lat: pt.lat, lng: pt.lng, title: c.title || mapsLabel(c.maps), icon: c.icon || '📌', type: meta.label, color });
+      if (pt) {
+        allPoints.push({ lat: pt.lat, lng: pt.lng, color, labels: [{ icon: c.icon || '📌', title: c.title || mapsLabel(c.maps), type: meta.label }] });
+        routeSegments[routeSegments.length - 1].push(L.latLng(pt.lat, pt.lng));
+      }
     }
   }
 
-  if (points.length === 0) return;
+  if (allPoints.length === 0) return;
 
-  if (_dayMaps[dayIndex]) {
-    _dayMaps[dayIndex].remove();
-    delete _dayMaps[dayIndex];
+  // Merge nearby points into clusters
+  const merged = [];
+  for (const p of allPoints) {
+    const existing = merged.find(m => distM(m, p) < MERGE_DIST);
+    if (existing) {
+      // Add labels that don't already exist in this cluster
+      for (const lbl of p.labels) {
+        if (!existing.labels.some(l => l.title === lbl.title && l.type === lbl.type)) {
+          existing.labels.push(lbl);
+        }
+      }
+    } else {
+      merged.push({ lat: p.lat, lng: p.lng, color: p.color, labels: [...p.labels] });
+    }
   }
+
+  // Destroy existing map
+  if (_dayMaps[dayIndex]) { _dayMaps[dayIndex].remove(); delete _dayMaps[dayIndex]; }
 
   const map = L.map(containerId, { zoomControl: true, attributionControl: false });
   _dayMaps[dayIndex] = map;
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19,
-  }).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
 
   const bounds = L.latLngBounds();
-  const routeCoords = [];
 
-  points.forEach((p, i) => {
-    const latlng = L.latLng(p.lat, p.lng);
+  merged.forEach((m, i) => {
+    const latlng = L.latLng(m.lat, m.lng);
     bounds.extend(latlng);
-    if (!p.isTrajectory) routeCoords.push(latlng);
 
+    const count = m.labels.length;
+    const pinText = count > 1 ? `${i + 1}<sub>×${count}</sub>` : String(i + 1);
     const markerIcon = L.divIcon({
       className: 'day-map-marker',
-      html: `<div class="map-pin" style="background:${p.color}">${i + 1}</div>`,
+      html: `<div class="map-pin${count > 1 ? ' map-pin-multi' : ''}" style="background:${m.color}">${pinText}</div>`,
       iconSize: [28, 28],
       iconAnchor: [14, 14],
     });
-    L.marker(latlng, { icon: markerIcon })
-      .addTo(map)
-      .bindPopup(`<b>${p.icon} ${p.title}</b><br><span style="font-size:0.8em;color:#666">${p.type}</span>`);
+
+    const popupHTML = m.labels.map(l =>
+      `<b>${l.icon} ${l.title}</b><br><span style="font-size:0.8em;color:#666">${l.type}</span>`
+    ).join('<hr style="margin:4px 0;border:0;border-top:1px solid #ddd">');
+
+    L.marker(latlng, { icon: markerIcon }).addTo(map).bindPopup(popupHTML);
   });
 
+  // Draw walking route segments (one per city block, broken by transports)
+  routeSegments.forEach(seg => {
+    if (seg.length > 1) {
+      L.polyline(seg, { color: day.color || '#4a9eff', weight: 3, opacity: 0.7, dashArray: '8 6' }).addTo(map);
+    }
+  });
+
+  // Draw transport trajectory arcs
   trajectories.forEach(tr => {
     L.polyline(
       [L.latLng(tr.from.lat, tr.from.lng), L.latLng(tr.to.lat, tr.to.lng)],
       { color: tr.color || '#4a9eff', weight: 3, opacity: 0.7, dashArray: '10 8' }
     ).addTo(map);
   });
-
-  if (routeCoords.length > 1) {
-    L.polyline(routeCoords, { color: day.color || '#4a9eff', weight: 3, opacity: 0.7, dashArray: '8 6' }).addTo(map);
-  }
 
   map.fitBounds(bounds.pad(0.15));
   setTimeout(() => map.invalidateSize(), 100);
