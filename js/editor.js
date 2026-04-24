@@ -251,11 +251,21 @@ async function saveTrip() {
   // Clean up empty optional fields on cards
   for (const day of config.days) {
     for (const card of (day.cards || [])) {
-      ['from', 'to', 'carrier', 'sub', 'maps', 'phone', 'email', 'city'].forEach(k => {
+      ['from', 'to', 'carrier', 'sub', 'phone', 'email', 'city'].forEach(k => {
         if (card[k] === '') delete card[k];
       });
+      // Clean empty/invalid map-location objects
+      ['maps', 'mapsFrom', 'mapsTo'].forEach(k => {
+        const v = card[k];
+        if (v === '' || v === null || v === undefined) { delete card[k]; return; }
+        if (typeof v === 'object' && (!v.lat || !v.lng)) delete card[k];
+      });
+      // Remove legacy geocode cache fields
+      ['lat', 'lng', 'latFrom', 'lngFrom', 'latTo', 'lngTo'].forEach(k => delete card[k]);
       if (card.tips && card.tips.length === 0) delete card.tips;
       if (card.tags && card.tags.length === 0) delete card.tags;
+      // Clean up visited=false (only store when true)
+      if (card.visited === false) delete card.visited;
     }
     if (day.food && day.food.length === 0) delete day.food;
     if (day.files && day.files.length === 0) delete day.files;
@@ -937,9 +947,12 @@ function renderCardFields(c, dayIdx, cardIdx, typeOptions) {
       <label class="editor-label">${t('ed.cityOverride')}</label>
       <input class="editor-input" value="${escHtml(c.city || '')}" oninput="${prefix}.city=this.value" placeholder="${t('ed.cityOverrideHint')}">
     </div>` : ''}
-    <div class="editor-row">
-      <div class="editor-field"><label class="editor-label">${t('ed.mapsAddress')}</label><input class="editor-input" value="${escHtml(c.maps || '')}" oninput="${prefix}.maps=this.value" placeholder="${t('ed.mapsHint')}"></div>
-    </div>
+    ${isTransport ? `<div class="editor-row">
+      ${edLocField(dayIdx, cardIdx, 'mapsFrom', c.mapsFrom, '📍', t('ed.mapsDeparture'), t('ed.mapsDepartureHint'), c.from || '')}
+      ${edLocField(dayIdx, cardIdx, 'mapsTo', c.mapsTo, '🏁', t('ed.mapsArrival'), t('ed.mapsArrivalHint'), c.to || '')}
+    </div>` : `<div class="editor-row">
+      ${edLocField(dayIdx, cardIdx, 'maps', c.maps, '📍', t('ed.mapsAddress'), t('ed.mapsHint'), c.title || '')}
+    </div>`}
     <div class="editor-row">
       <div class="editor-field"><label class="editor-label">${t('ed.phone')}</label><input class="editor-input" value="${escHtml(c.phone || '')}" oninput="${prefix}.phone=this.value" placeholder="+81351557111"></div>
       <div class="editor-field"><label class="editor-label">${t('ed.email')}</label><input class="editor-input" value="${escHtml(c.email || '')}" oninput="${prefix}.email=this.value" placeholder="info@hotel.com"></div>
@@ -1069,14 +1082,6 @@ function edMoveCard(dayIdx, cardIdx, dir) {
 }
 
 // ─── Date helpers ───
-
-function getDayNames() {
-  return [t('day.sun'), t('day.mon'), t('day.tue'), t('day.wed'), t('day.thu'), t('day.fri'), t('day.sat')];
-}
-function getMonthNames() {
-  return [t('month.jan'), t('month.feb'), t('month.mar'), t('month.apr'), t('month.may'), t('month.jun'),
-          t('month.jul'), t('month.aug'), t('month.sep'), t('month.oct'), t('month.nov'), t('month.dec')];
-}
 
 function isoToDisplay(iso) {
   if (!iso) return '';
@@ -1343,4 +1348,124 @@ function toggleEditorDay(header) {
 
 function toggleEditorCard(header) {
   header.closest('.editor-card-item').classList.toggle('open');
+}
+
+// ─── Location search field helpers ───
+
+function edLocField(dayIdx, cardIdx, field, val, icon, label, hint, suggestQuery) {
+  const qId = `loc-q-${field}-${dayIdx}-${cardIdx}`;
+  const rId = `loc-r-${field}-${dayIdx}-${cardIdx}`;
+  const hasVal = val && typeof val === 'object' && val.lat;
+  const locLabel = hasVal ? (val.label || `${val.lat}, ${val.lng}`) : '';
+  const defaultSearch = hasVal ? locLabel.split(',')[0] : suggestQuery;
+
+  const currentHTML = hasVal
+    ? `<div class="editor-loc-current">
+        <span class="editor-loc-name">${escHtml(locLabel.split(',').slice(0, 2).join(','))}</span>
+        <span class="editor-loc-coord">${val.lat.toFixed(4)}, ${val.lng.toFixed(4)}</span>
+        <button class="editor-loc-clear" onclick="edClearLocation(${dayIdx},${cardIdx},'${field}')" title="${t('ed.locClear')}">✕</button>
+      </div>`
+    : '';
+
+  return `<div class="editor-field">
+    <label class="editor-label">${icon} ${label}</label>
+    <div class="editor-loc-wrap" id="loc-${field}-${dayIdx}-${cardIdx}">
+      ${currentHTML}
+      <div class="editor-loc-input-row">
+        <input class="editor-input editor-loc-query" id="${qId}"
+          value="${escHtml(defaultSearch)}" placeholder="${hint}"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();edSearchLocation(${dayIdx},${cardIdx},'${field}',this.value)}">
+        <button class="editor-loc-search-btn" onclick="edSearchLocation(${dayIdx},${cardIdx},'${field}',document.getElementById('${qId}').value)" title="${t('ed.locSearch')}">🔍</button>
+      </div>
+      <div class="editor-loc-results" id="${rId}"></div>
+    </div>
+  </div>`;
+}
+
+let _locSearchResults = [];
+
+async function edSearchLocation(dayIdx, cardIdx, field, query) {
+  const rId = `loc-r-${field}-${dayIdx}-${cardIdx}`;
+  const resultsEl = document.getElementById(rId);
+  if (!resultsEl || !query.trim()) return;
+
+  // Direct coordinate input (e.g., "35.7148, 139.7967")
+  const coordMatch = query.match(/^\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*$/);
+  if (coordMatch) {
+    const lat = parseFloat(coordMatch[1]), lng = parseFloat(coordMatch[2]);
+    edSelectLocation(dayIdx, cardIdx, field, lat, lng, `${lat}, ${lng}`);
+    resultsEl.innerHTML = '';
+    return;
+  }
+
+  resultsEl.innerHTML = `<div class="editor-loc-loading">${t('ed.locSearching')}</div>`;
+
+  try {
+    const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&accept-language=en`, {
+      headers: { 'Accept-Language': 'en' }
+    });
+    const data = await resp.json();
+
+    if (!data.length) {
+      resultsEl.innerHTML = `<div class="editor-loc-empty">${t('ed.locNoResults')}</div>`;
+      return;
+    }
+
+    _locSearchResults = data.map(r => ({
+      lat: parseFloat(r.lat),
+      lng: parseFloat(r.lon),
+      label: r.display_name
+    }));
+
+    resultsEl.innerHTML = _locSearchResults.map((r, i) =>
+      `<div class="editor-loc-result" onclick="edPickResult(${dayIdx},${cardIdx},'${field}',${i})">
+        <span class="editor-loc-result-name">${escHtml(r.label.split(',').slice(0, 3).join(','))}</span>
+        <span class="editor-loc-result-coord">${r.lat.toFixed(4)}, ${r.lng.toFixed(4)}</span>
+      </div>`
+    ).join('');
+  } catch {
+    resultsEl.innerHTML = `<div class="editor-loc-empty">${t('ed.locSearchFailed')}</div>`;
+  }
+}
+
+function edPickResult(dayIdx, cardIdx, field, idx) {
+  const r = _locSearchResults[idx];
+  if (!r) return;
+  edSelectLocation(dayIdx, cardIdx, field, r.lat, r.lng, r.label);
+}
+
+function edSelectLocation(dayIdx, cardIdx, field, lat, lng, label) {
+  editorData.days[dayIdx].cards[cardIdx][field] = {
+    lat: Math.round(lat * 1e6) / 1e6,
+    lng: Math.round(lng * 1e6) / 1e6,
+    label: label
+  };
+
+  // Update UI in-place
+  const wrapId = `loc-${field}-${dayIdx}-${cardIdx}`;
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+
+  let cur = wrap.querySelector('.editor-loc-current');
+  if (!cur) {
+    cur = document.createElement('div');
+    cur.className = 'editor-loc-current';
+    wrap.insertBefore(cur, wrap.firstChild);
+  }
+  cur.innerHTML = `
+    <span class="editor-loc-name">${escHtml(label.split(',').slice(0, 2).join(','))}</span>
+    <span class="editor-loc-coord">${lat.toFixed(4)}, ${lng.toFixed(4)}</span>
+    <button class="editor-loc-clear" onclick="edClearLocation(${dayIdx},${cardIdx},'${field}')" title="${t('ed.locClear')}">✕</button>`;
+
+  const results = wrap.querySelector('.editor-loc-results');
+  if (results) results.innerHTML = '';
+}
+
+function edClearLocation(dayIdx, cardIdx, field) {
+  delete editorData.days[dayIdx].cards[cardIdx][field];
+  const wrapId = `loc-${field}-${dayIdx}-${cardIdx}`;
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  const cur = wrap.querySelector('.editor-loc-current');
+  if (cur) cur.remove();
 }
