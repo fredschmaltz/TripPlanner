@@ -980,3 +980,114 @@ input[type="time"].editor-input {
 [data-theme="light"] .editor-city-dot {
   border-color: rgba(0,0,0,0.1);
 }
+
+/* ══════════════════════════════════════════
+   LOCATION SEARCH COMPONENT
+══════════════════════════════════════════ */
+.editor-loc-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.editor-loc-current {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.78rem;
+}
+.editor-loc-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+.editor-loc-coord {
+  font-family: 'Consolas', 'SF Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.editor-loc-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+.editor-loc-clear:hover { color: #e74c3c; }
+.editor-loc-input-row {
+  display: flex;
+  gap: 4px;
+}
+.editor-loc-input-row .editor-input {
+  flex: 1;
+  min-width: 0;
+}
+.editor-loc-search-btn {
+  flex-shrink: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+.editor-loc-search-btn:hover {
+  border-color: #4a9eff;
+  background: #4a9eff15;
+}
+.editor-loc-results {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.editor-loc-result {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  background: var(--surface2);
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+.editor-loc-result:hover {
+  border-color: #4a9eff;
+  background: #4a9eff12;
+}
+.editor-loc-result-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  color: var(--text);
+}
+.editor-loc-result-coord {
+  font-family: 'Consolas', 'SF Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.editor-loc-loading,
+.editor-loc-empty {
+  text-align: center;
+  padding: 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
