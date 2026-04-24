@@ -396,32 +396,35 @@ function renderDay(day) {
 function renderTimeline() {
   const timeline = document.getElementById('timeline');
 
-  const cityMap = new Map();
-  const cityOrder = [];
+  // Group DAYS into consecutive city stretches (same city appearing later = new group)
+  const cityGroups = [];
+  let lastCityKey = null;
   for (const day of DAYS) {
     const key = (day.dayTrip && day.parentCity) ? day.parentCity : day.city;
-    if (!cityMap.has(key)) {
+    if (key !== lastCityKey) {
       const base = DAYS.find(d => d.city === key && !d.dayTrip) || DAYS.find(d => d.city === key);
-      cityMap.set(key, { flag: base ? base.flag : '🏳️', city: key, color: base ? base.color : '#aaa', days: [], dayTripCities: new Set() });
-      cityOrder.push(key);
+      cityGroups.push({ flag: base ? base.flag : '🏳️', city: key, color: base ? base.color : '#aaa', days: [], dayTripCities: new Set() });
+      lastCityKey = key;
     }
-    cityMap.get(key).days.push(day);
-    if (day.dayTrip) cityMap.get(key).dayTripCities.add(day.city);
+    cityGroups[cityGroups.length - 1].days.push(day);
+    if (day.dayTrip) cityGroups[cityGroups.length - 1].dayTripCities.add(day.city);
   }
 
-  const countryMap = new Map();
-  const countryOrder = [];
-  for (const key of cityOrder) {
-    const g = cityMap.get(key);
-    if (!countryMap.has(g.flag)) {
-      countryMap.set(g.flag, { flag: g.flag, name: FLAG_TO_COUNTRY[g.flag] || g.flag, cities: [] });
-      countryOrder.push(g.flag);
+  // Group city stretches into consecutive country rails
+  const countryRails = [];
+  let lastFlag = null;
+  for (const g of cityGroups) {
+    if (g.flag !== lastFlag) {
+      countryRails.push({ flag: g.flag, name: FLAG_TO_COUNTRY[g.flag] || g.flag, cities: [] });
+      lastFlag = g.flag;
     }
-    countryMap.get(g.flag).cities.push(g);
+    countryRails[countryRails.length - 1].cities.push(g);
   }
 
-  const railsHTML = countryOrder.map(cflag => {
-    const country = countryMap.get(cflag);
+  // Track DAYS indices for each country rail (used by summary)
+  let dayIdx = 0;
+  const railsHTML = countryRails.map(country => {
+    const railDayStart = dayIdx;
     const citiesHTML = country.cities.map(g => {
       const extraCities = [...g.dayTripCities];
       const nameHTML = extraCities.length
@@ -430,6 +433,7 @@ function renderTimeline() {
       const nights = g.days.filter(d => !d.dayTrip).length;
       const nightWord = nights !== 1 ? t('timeline.nights') : t('timeline.night');
       const metaLabel = nights + ' ' + nightWord + (extraCities.length ? ` \u00B7 ${extraCities.length} ${t('timeline.dayTrip')}` : '');
+      dayIdx += g.days.length;
       return `
       <div class="location-group">
         <div class="location-header" onclick="toggleLocation(this)">
@@ -440,8 +444,9 @@ function renderTimeline() {
         <div class="location-body">${g.days.map(renderDay).join('')}</div>
       </div>`;
     }).join('');
+    const railDayEnd = dayIdx;
 
-    return `<div class="country-rail" data-country="${country.name}">
+    return `<div class="country-rail" data-country="${country.name}" data-day-start="${railDayStart}" data-day-end="${railDayEnd}">
       <div class="country-rail-label" onclick="toggleCountrySummary(this)"><span class="country-rail-flag">${country.flag}</span><span class="country-rail-name">${country.name}</span></div>
       <div class="country-rail-line"></div>
       <div class="country-rail-summary country-summary-card" onclick="toggleCountrySummary(this)"></div>
@@ -531,9 +536,9 @@ function positionRailLines() {
 }
 
 // ─── Country Summary ───
-function buildCountrySummary(countryName) {
+function buildCountrySummary(countryName, dayStart, dayEnd) {
   const flag = Object.keys(FLAG_TO_COUNTRY).find(k => FLAG_TO_COUNTRY[k] === countryName) || '';
-  const countryDays = DAYS.filter(d => FLAG_TO_COUNTRY[d.flag] === countryName);
+  const countryDays = DAYS.slice(dayStart, dayEnd);
 
   let flights = 0, trains = 0, activities = 0, foodTips = 0, paid = 0, unpaid = 0, nights = 0;
   const skip = new Set(['checkout', 'stay', 'flight', 'transit']);
@@ -580,7 +585,7 @@ function toggleCountrySummary(el) {
     summary.classList.remove('visible');
     label.classList.remove('collapsed-mode');
   } else {
-    summary.innerHTML = buildCountrySummary(rail.dataset.country);
+    summary.innerHTML = buildCountrySummary(rail.dataset.country, parseInt(rail.dataset.dayStart), parseInt(rail.dataset.dayEnd));
     summary.classList.add('visible');
     cities.style.display = 'none';
     label.classList.add('collapsed-mode');
