@@ -142,6 +142,25 @@ const COUNTRY_FLAGS = [
 const FLAG_TO_COUNTRY = {};
 COUNTRY_FLAGS.forEach(c => { FLAG_TO_COUNTRY[c.flag] = c.name; });
 
+// Map flag emoji to ISO 3166-1 alpha-2 country code (for Nominatim countrycodes param)
+const FLAG_TO_ISO = {
+  '🇦🇫':'af','🇦🇱':'al','🇩🇿':'dz','🇦🇷':'ar','🇦🇺':'au','🇦🇹':'at',
+  '🇧🇪':'be','🇧🇷':'br','🇧🇬':'bg','🇰🇭':'kh','🇨🇦':'ca','🇨🇱':'cl',
+  '🇨🇳':'cn','🇨🇴':'co','🇭🇷':'hr','🇨🇺':'cu','🇨🇿':'cz','🇩🇰':'dk',
+  '🇪🇬':'eg','🇪🇪':'ee','🇫🇮':'fi','🇫🇷':'fr','🇩🇪':'de','🇬🇷':'gr',
+  '🇭🇰':'hk','🇭🇺':'hu','🇮🇸':'is','🇮🇳':'in','🇮🇩':'id','🇮🇪':'ie',
+  '🇮🇱':'il','🇮🇹':'it','🇯🇵':'jp','🇯🇴':'jo','🇰🇪':'ke','🇰🇷':'kr',
+  '🇱🇻':'lv','🇱🇹':'lt','🇲🇾':'my','🇲🇽':'mx','🇲🇦':'ma','🇲🇲':'mm',
+  '🇳🇱':'nl','🇳🇿':'nz','🇳🇬':'ng','🇳🇴':'no','🇵🇰':'pk','🇵🇪':'pe',
+  '🇵🇭':'ph','🇵🇱':'pl','🇵🇹':'pt','🇷🇴':'ro','🇷🇺':'ru','🇸🇦':'sa',
+  '🇸🇬':'sg','🇸🇰':'sk','🇸🇮':'si','🇿🇦':'za','🇪🇸':'es','🇱🇰':'lk',
+  '🇸🇪':'se','🇨🇭':'ch','🇹🇼':'tw','🇹🇭':'th','🇹🇷':'tr','🇺🇦':'ua',
+  '🇦🇪':'ae','🇬🇧':'gb','🇺🇸':'us','🇻🇳':'vn',
+};
+// Reverse: ISO code → flag
+const ISO_TO_FLAG = {};
+for (const [flag, iso] of Object.entries(FLAG_TO_ISO)) ISO_TO_FLAG[iso] = flag;
+
 // Map country flag to color palette (primary, secondary, tertiary)
 // Ensures no color collisions between different countries
 const COUNTRY_FLAG_PALETTES = {
