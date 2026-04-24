@@ -159,6 +159,13 @@
   height: 36px;
   box-sizing: border-box;
 }
+/* Date & time inputs: tame extra browser chrome padding */
+input[type="date"].editor-input,
+input[type="time"].editor-input {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  line-height: 1;
+}
 .editor-input:focus,
 .editor-select:focus,
 .editor-textarea:focus {
@@ -612,11 +619,14 @@
     min-width: 0;
     box-sizing: border-box;
   }
-  /* Date & time: prevent overflow in flex rows */
+  /* Date & time: match height of other inputs, reduce native chrome padding */
   input[type="date"].editor-input,
   input[type="time"].editor-input {
     min-width: 0;
     overflow: hidden;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    line-height: 1;
   }
   /* Icon emoji select: keep compact on mobile */
   .editor-emoji-select {
@@ -758,23 +768,17 @@
   /* Day: city + date same height */
   .editor-city-select-wrap { height: 34px; }
   .editor-city-select-wrap .editor-select { height: 34px; }
-  input[type="date"].editor-input {
-    height: 34px;
-    min-width: 0;
-    box-sizing: border-box;
-    overflow: hidden;
-  }
 
-  /* Card: start + end time same height, no overflow */
+  /* Date & time: match other input heights, tame native padding */
+  input[type="date"].editor-input,
   input[type="time"].editor-input {
     height: 34px;
     min-width: 0;
     box-sizing: border-box;
-  }
-  .editor-time-start,
-  .editor-time-end {
-    width: 100%;
-    min-width: 0;
+    overflow: hidden;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    line-height: 1;
   }
 
   .editor-label { font-size: 0.6rem; }
