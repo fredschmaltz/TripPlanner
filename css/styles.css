@@ -799,7 +799,7 @@ header .subtitle {
   /* ── Day block ── */
   .day { border-radius: 10px; }
   .day-header { padding: 10px 10px; gap: 6px; }
-  .day-date { display: none; }
+  .day-date { font-size: 0.62rem; }
   .day-title { font-size: 0.9rem; gap: 6px; }
   .day-flag { font-size: 0.85rem; }
   .day-controls { gap: 4px; }
