@@ -308,6 +308,11 @@ header .subtitle {
   width: 7px; height: 7px;
   border-radius: 50%;
 }
+.legend-empty {
+  font-size: 0.72rem;
+  color: var(--dim);
+  font-style: italic;
+}
 
 /* ══════════════════════════════════════════
    TAGS
