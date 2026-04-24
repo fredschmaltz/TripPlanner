@@ -760,19 +760,15 @@ header .subtitle {
   /* ── Settings gear ── */
   .tp-settings-wrap { top: 8px; right: 8px; }
   .tp-settings-btn { width: 32px; height: 32px; font-size: 0.95rem; }
-  .tp-settings-popover { min-width: 160px; padding: 10px 12px; }
+  .tp-settings-popover { min-width: 180px; padding: 10px 12px; }
 
-  /* ── Action buttons ── */
+  /* ── HIDE action bar on mobile, show in popover instead ── */
   .trip-actions-bar {
-    right: 44px;
-    top: 8px;
-    gap: 4px;
+    display: none !important;
   }
-  .trip-action-btn {
-    padding: 5px 10px;
-    font-size: 0.7rem;
-    border-radius: 6px;
-    gap: 4px;
+  .tp-actions-group {
+    display: flex;
+    flex-direction: column;
   }
 
   /* ── Picker ── */
@@ -802,6 +798,7 @@ header .subtitle {
   .timeline-with-rail { padding-left: 28px; }
   .timeline-rail-line { left: 22px; }
   .country-rail-label { width: 20px; font-size: 0.5rem; letter-spacing: 0.6px; }
+  .country-rail-flag { font-size: 0.75rem; margin-bottom: 2px; }
 
   /* ── Country summary ── */
   .country-summary-card { padding: 8px 10px; gap: 8px; }
@@ -967,6 +964,19 @@ header .subtitle {
   justify-content: center;
   cursor: pointer;
   z-index: 2;
+  overflow: visible;
+}
+.country-rail-flag {
+  writing-mode: horizontal-tb;
+  text-orientation: initial;
+  transform: rotate(180deg);
+  font-size: 0.85rem;
+  line-height: 1;
+  display: block;
+  margin-bottom: 4px;
+}
+.country-rail-name {
+  display: block;
 }
 .country-rail-line { display: none; }
 .country-rail-cities {
@@ -1368,6 +1378,42 @@ header .subtitle {
 [data-theme="light"] .exp-files-label { color: #2a6868; }
 [data-theme="light"] .file-open-btn { color: #2a6868; }
 
+/* ── Popover action items (mobile only) ── */
+.tp-actions-group {
+  display: none;
+}
+.tp-actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tp-action-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-align: left;
+  white-space: nowrap;
+}
+.tp-action-item:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+/* Hide actions group when editor is active */
+.editor-active .tp-actions-group {
+  display: none !important;
+}
+
 /* ── Settings gear button + popover ── */
 .tp-settings-wrap {
   position: fixed;
@@ -1525,6 +1571,7 @@ header .subtitle {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
 }
 .bento-badge {
   display: inline-flex;
@@ -1748,10 +1795,55 @@ header .subtitle {
   [data-card-style="bento"] .bento-wide {
     grid-column: span 1;
   }
+  .bento-collapsed {
+    padding: 14px;
+    gap: 8px;
+  }
+  .bento-badge { font-size: 0.55rem; padding: 3px 8px; }
+  .bento-time { font-size: 0.55rem; }
+  .bento-icon { font-size: 1.6rem; }
+  .bento-title { font-size: 0.95rem; }
+  .bento-sub { font-size: 0.65rem; }
+  .bento-route { font-size: 0.78rem; gap: 6px; }
+  .bento-chip { font-size: 0.55rem; padding: 2px 6px; }
+
   .minimal-collapsed {
     gap: 10px;
     padding: 12px 14px;
   }
   .minimal-time { min-width: 40px; font-size: 0.65rem; }
+  .minimal-title { font-size: 0.82rem; }
+  .minimal-sub { font-size: 0.65rem; }
   .minimal-pills { flex-wrap: wrap; }
+  .minimal-arrow { display: none; }
+
+  /* Header badges overflow fix */
+  .header-badges { flex-wrap: wrap; }
+  .esim-badge { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .route-pills { flex-wrap: wrap; justify-content: center; }
+
+  /* City pills in day header */
+  .city-pill { font-size: 0.68rem; padding: 1px 6px; }
+
+  /* Expanded card improvements */
+  .exp-header { flex-wrap: wrap; gap: 8px; }
+  .exp-title-group { flex: 1 1 0; min-width: 120px; }
+  .exp-contacts { gap: 3px; }
+  .contact-val { word-break: break-all; }
+
+  /* Segment divider */
+  .segment-divider { font-size: 0.65rem; padding: 4px 0; }
+}
+
+/* ── Landscape mobile ── */
+@media (max-height: 500px) and (orientation: landscape) {
+  header { padding: 32px 14px 20px; }
+  header h1 { font-size: 1.5rem; }
+  .legend { padding: 6px 10px; }
+  .timeline { padding: 12px 8px 40px; }
+  .day-header { padding: 8px; }
+  .card-collapsed { min-height: 48px; padding: 6px 8px; }
+  .card-expanded { padding: 8px; }
+  .exp-header { gap: 6px; }
+  .food-panel-inner { grid-template-columns: 1fr 1fr; }
 }
