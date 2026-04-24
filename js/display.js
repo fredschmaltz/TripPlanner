@@ -395,7 +395,7 @@ function renderTimeline() {
     }).join('');
 
     return `<div class="country-rail" data-country="${country.name}">
-      <div class="country-rail-label" onclick="toggleCountrySummary(this)">${country.flag} ${country.name}</div>
+      <div class="country-rail-label" onclick="toggleCountrySummary(this)"><span class="country-rail-flag">${country.flag}</span><span class="country-rail-name">${country.name}</span></div>
       <div class="country-rail-line"></div>
       <div class="country-rail-summary country-summary-card" onclick="toggleCountrySummary(this)"></div>
       <div class="country-rail-cities">${citiesHTML}</div>
