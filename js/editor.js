@@ -294,32 +294,38 @@ async function saveTrip() {
 
   const jsonStr = JSON.stringify(config, null, 2);
 
-  // Try to save via File System Access API (overwrites trip-config.json)
   let saved = false;
-  if (JSON_DIR_HANDLE) {
+  const isNewProject = !JSON_DIR_HANDLE;
+
+  if (isNewProject) {
+    // New project: ask user to select a folder to save
+    if (FOLDER_PICKER_SUPPORTED) {
+      try {
+        const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        JSON_DIR_HANDLE = dirHandle;
+        const fileHandle = await dirHandle.getFileHandle('trip-config.json', { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(jsonStr);
+        await writable.close();
+        saved = true;
+        await copyPendingFiles();
+      } catch (e) {
+        if (e.name === 'AbortError') return; // User cancelled
+        console.warn('Save failed:', e);
+      }
+    }
+  } else {
+    // Existing project: ask to overwrite
+    const override = confirm(t('save.overrideMsg'));
+    if (!override) return;
+
     try {
       const fileHandle = await JSON_DIR_HANDLE.getFileHandle('trip-config.json', { create: true });
       const writable = await fileHandle.createWritable();
       await writable.write(jsonStr);
       await writable.close();
       saved = true;
-
-      // Copy any pending files to the correct subfolders
-      for (const pf of pendingFiles) {
-        try {
-          const parts = pf.targetPath.split('/');
-          let dir = JSON_DIR_HANDLE;
-          for (let i = 0; i < parts.length - 1; i++) {
-            dir = await dir.getDirectoryHandle(parts[i], { create: true });
-          }
-          const fh = await dir.getFileHandle(parts[parts.length - 1], { create: true });
-          const w = await fh.createWritable();
-          await w.write(pf.file);
-          await w.close();
-        } catch (err) {
-          console.warn('Could not copy file:', pf.targetPath, err);
-        }
-      }
+      await copyPendingFiles();
     } catch (err) {
       console.warn('File System Access save failed:', err);
     }
@@ -338,8 +344,31 @@ async function saveTrip() {
 
   // Apply changes to the live app
   initTrip(config);
+
+  // Clear dirty state before closing to avoid the discard prompt
+  editorSnapshot = JSON.stringify(editorData);
   closeEditor();
   showToast(saved ? t('toast.saved') : t('toast.downloaded'));
+}
+
+/** Copy pending files to their target subfolders */
+async function copyPendingFiles() {
+  if (!JSON_DIR_HANDLE) return;
+  for (const pf of pendingFiles) {
+    try {
+      const parts = pf.targetPath.split('/');
+      let dir = JSON_DIR_HANDLE;
+      for (let i = 0; i < parts.length - 1; i++) {
+        dir = await dir.getDirectoryHandle(parts[i], { create: true });
+      }
+      const fh = await dir.getFileHandle(parts[parts.length - 1], { create: true });
+      const w = await fh.createWritable();
+      await w.write(pf.file);
+      await w.close();
+    } catch (err) {
+      console.warn('Could not copy file:', pf.targetPath, err);
+    }
+  }
 }
 
 // ─── Main Form Renderer ───
@@ -429,26 +458,24 @@ function renderRouteSection() {
     const qId = `route-city-q-${i}`;
     const rId = `route-city-r-${i}`;
     return `
-    <div class="editor-inline-row" style="flex-wrap:wrap;gap:6px">
-      <div style="display:flex;gap:4px;align-items:center;flex:1;min-width:0">
-        <input type="color" class="editor-color-input editor-route-color" value="${r.color || '#aaaaaa'}" oninput="editorData.trip.route[${i}].color=this.value;edSyncRouteColorToDays(${i})">
-        <select class="editor-inline-input editor-flag-select" onchange="editorData.trip.route[${i}].flag=this.value;edSyncRouteFlagToDays(${i});refreshSection('route')">
-          <option value="">${t('ed.selectCountry')}</option>
-          ${currentFlagOptions}
-        </select>
-        <div class="editor-loc-wrap" id="route-city-wrap-${i}" style="flex:1;min-width:0">
-          <div class="editor-loc-input-row">
-            <input class="editor-input editor-loc-query" id="${qId}"
-              value="${escHtml(r.city || '')}" placeholder="${t('ed.cityName')}"
-              oninput="edRenameRouteCityDebounced(${i},this.value)"
-              onkeydown="if(event.key==='Enter'){event.preventDefault();edSearchRouteCity(${i},this.value)}">
-            ${coordBadge}
-            <button class="editor-loc-search-btn" onclick="edSearchRouteCity(${i},document.getElementById('${qId}').value)" title="${t('ed.locSearch')}">🔍</button>
-          </div>
-          <div class="editor-loc-results" id="${rId}"></div>
+    <div class="editor-inline-row editor-route-stop">
+      <input type="color" class="editor-color-input editor-route-color" value="${r.color || '#aaaaaa'}" oninput="editorData.trip.route[${i}].color=this.value;edSyncRouteColorToDays(${i})">
+      <select class="editor-inline-input editor-flag-select" onchange="editorData.trip.route[${i}].flag=this.value;edSyncRouteFlagToDays(${i});refreshSection('route')">
+        <option value="">${t('ed.selectCountry')}</option>
+        ${currentFlagOptions}
+      </select>
+      <div class="editor-loc-wrap" id="route-city-wrap-${i}" style="flex:1;min-width:0">
+        <div class="editor-loc-input-row">
+          <input class="editor-input editor-loc-query" id="${qId}"
+            value="${escHtml(r.city || '')}" placeholder="${t('ed.cityName')}"
+            oninput="edRenameRouteCityDebounced(${i},this.value)"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();edSearchRouteCity(${i},this.value)}">
+          ${coordBadge}
+          <button class="editor-loc-search-btn" onclick="edSearchRouteCity(${i},document.getElementById('${qId}').value)" title="${t('ed.locSearch')}">🔍</button>
         </div>
+        <div class="editor-loc-results" id="${rId}"></div>
       </div>
-      <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+      <div class="editor-route-actions-inline">
         <button class="editor-move-btn" onclick="edMoveRoute(${i},-1)" title="${t('ed.moveUp')}">↑</button>
         <button class="editor-move-btn" onclick="edMoveRoute(${i},1)" title="${t('ed.moveDown')}">↓</button>
         <button class="editor-remove-btn" onclick="edRemoveRoute(${i})" title="${t('ed.remove')}">✕</button>
@@ -567,11 +594,8 @@ async function edSearchRouteCity(routeIdx, query) {
   resultsEl.innerHTML = `<div class="editor-loc-loading">${t('ed.locSearching')}</div>`;
 
   try {
-    // Scope search to selected country if flag is set
-    const routeFlag = editorData.trip.route[routeIdx].flag;
-    const isoCode = routeFlag ? (FLAG_TO_ISO[routeFlag] || '') : '';
-    const ccParam = isoCode ? `&countrycodes=${isoCode}` : '';
-    const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(query)}&limit=5&accept-language=en${ccParam}`, {
+    // Search globally — don't restrict to selected country so user can pick cities from any country
+    const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(query)}&limit=5&accept-language=en`, {
       headers: { 'Accept-Language': 'en' }
     });
     const data = await resp.json();
@@ -600,10 +624,26 @@ function edPickRouteCityResult(routeIdx, resultIdx) {
   const r = _routeCitySearchResults[resultIdx];
   if (!r) return;
   const route = editorData.trip.route[routeIdx];
-  const cityName = route.city || r.label.split(',')[0].trim();
 
-  // Auto-select country flag if empty and we have a country code from Nominatim
-  if (!route.flag && r.countryCode) {
+  // Extract just the city name from the search result (first segment of display_name)
+  const cityName = r.label.split(',')[0].trim();
+
+  // If result is from a different country, prompt user
+  if (route.flag && r.countryCode) {
+    const currentISO = FLAG_TO_ISO[route.flag] || '';
+    if (currentISO && r.countryCode.toLowerCase() !== currentISO.toLowerCase()) {
+      const detectedFlag = ISO_TO_FLAG[r.countryCode.toLowerCase()];
+      const newCountryName = detectedFlag ? (FLAG_TO_COUNTRY[detectedFlag] || r.countryCode) : r.countryCode;
+      const msg = t('ed.countryChangePrompt').replace('{country}', newCountryName);
+      if (!confirm(msg)) return;
+      if (detectedFlag) {
+        route.flag = detectedFlag;
+        autoAssignRouteColors(editorData.trip.route);
+        edSyncRouteFlagToDays(routeIdx);
+      }
+    }
+  } else if (!route.flag && r.countryCode) {
+    // Auto-select country flag if empty
     const detectedFlag = ISO_TO_FLAG[r.countryCode.toLowerCase()];
     if (detectedFlag) {
       route.flag = detectedFlag;
