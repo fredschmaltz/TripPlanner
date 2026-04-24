@@ -62,6 +62,10 @@ const TRANSLATIONS = {
   'legend.viewpoint':          'Viewpoint',
   'legend.nightlife':          'Nightlife',
   'legend.district':           'District',
+  'legend.aquarium':           'Aquarium',
+  'legend.zoo':                'Zoo',
+  'legend.activity':           'Activity',
+  'legend.empty':              'Please add details to the trip',
 
   // ─── Display — Card ───
   'card.map':                  'Map',
@@ -347,6 +351,10 @@ const TRANSLATIONS_PTBR = {
   'legend.viewpoint':          'Mirante',
   'legend.nightlife':          'Vida Noturna',
   'legend.district':           'Bairro',
+  'legend.aquarium':           'Aquário',
+  'legend.zoo':                'Zoológico',
+  'legend.activity':           'Atividade',
+  'legend.empty':              'Por favor adicione detalhes à viagem',
 
   // ─── Display — Card ───
   'card.map':                  'Mapa',
