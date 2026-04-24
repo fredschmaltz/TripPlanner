@@ -490,6 +490,10 @@ function initTrip(data) {
   const togglesGroup = document.getElementById('tp-toggles-group');
   if (togglesGroup) togglesGroup.style.display = '';
 
+  // Show timeline controls
+  const tlControls = document.getElementById('timeline-controls');
+  if (tlControls) tlControls.style.display = 'flex';
+
   // Sync gray-past toggle
   const grayPastCb = document.getElementById('tp-toggle-gray-past');
   if (grayPastCb) grayPastCb.checked = grayPastEnabled;
@@ -501,6 +505,10 @@ function initTrip(data) {
   renderHeader();
   renderLegend();
   renderTimeline();
+
+  // Initialize search & view controls
+  initTimelineSearch();
+  applyTimelineControlsTranslations();
 
   document.querySelectorAll('.day-body, .location-body').forEach(b => {
     b.style.height = 'auto';
@@ -715,3 +723,10 @@ window.edClearLocation = edClearLocation;
 window.edSearchRouteCity = edSearchRouteCity;
 window.edPickRouteCityResult = edPickRouteCityResult;
 window.edPickRouteCityCoords = edPickRouteCityCoords;
+
+// Search / Filter / View Mode
+window.clearTimelineSearch = clearTimelineSearch;
+window.setViewMode = setViewMode;
+window.viewPrev = viewPrev;
+window.viewNext = viewNext;
+window.initTimelineSearch = initTimelineSearch;
