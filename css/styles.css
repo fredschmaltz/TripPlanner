@@ -2014,6 +2014,16 @@ header .subtitle {
   box-shadow: 0 2px 6px rgba(0,0,0,0.4);
   border: 2px solid rgba(255,255,255,0.6);
 }
+.map-pin sub {
+  font-size: 0.5rem;
+  vertical-align: baseline;
+  opacity: 0.8;
+}
+.map-pin-multi {
+  width: 32px; height: 32px;
+  border-width: 2.5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.25);
+}
 
 /* ══════════════════════════════════════════
    HEADER MAP BUTTON & TRIP ROUTE OVERLAY
