@@ -34,6 +34,14 @@
         <button class="tp-style-btn" data-style="minimal" onclick="setCardStyle('minimal')">Minimal</button>
       </div>
     </div>
+    <div class="tp-actions-group" id="tp-actions-group">
+      <span class="tp-settings-label" id="tp-lbl-actions">Actions</span>
+      <div class="tp-actions-list">
+        <button class="tp-action-item" id="tp-pop-docs" onclick="document.getElementById('load-docs-btn').click();toggleSettingsPopover()">📎 Docs</button>
+        <button class="tp-action-item" id="tp-pop-edit" onclick="openEditor(false);toggleSettingsPopover()">✏️ Edit</button>
+        <button class="tp-action-item" id="tp-pop-change" onclick="document.getElementById('change-trip-btn').click();toggleSettingsPopover()">📋 Change</button>
+      </div>
+    </div>
   </div>
 </div>
 
