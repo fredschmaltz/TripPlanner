@@ -166,9 +166,17 @@ function initApp() {
     }
   });
 
-  // ── Overlay click-to-close ──
-  document.getElementById('card-overlay').addEventListener('click', function () {
-    if (expandedCard) {
+  // ── Overlay click-to-close (or switch card) ──
+  document.getElementById('card-overlay').addEventListener('click', function (e) {
+    if (!expandedCard) return;
+    // Check if a non-expanded card is behind the overlay at the click point
+    this.style.pointerEvents = 'none';
+    const below = document.elementFromPoint(e.clientX, e.clientY);
+    this.style.pointerEvents = '';
+    const card = below ? below.closest('.card') : null;
+    if (card && !card.classList.contains('expanded')) {
+      expandCard(card);
+    } else {
       expandedCard.classList.remove('expanded');
       expandedCard = null;
       this.classList.remove('active');
