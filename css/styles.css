@@ -2020,9 +2020,13 @@ header .subtitle {
   opacity: 0.8;
 }
 .map-pin-multi {
-  width: 32px; height: 32px;
+  width: auto; min-width: 32px; height: 28px;
+  padding: 0 6px;
   border-width: 2.5px;
+  border-radius: 14px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.25);
+  white-space: nowrap;
+  font-size: 0.62rem;
 }
 
 /* ══════════════════════════════════════════
