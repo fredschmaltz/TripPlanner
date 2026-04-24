@@ -106,6 +106,9 @@ function initApp() {
     // Hide actions group in settings popover
     const ag = document.getElementById('tp-actions-group');
     if (ag) ag.style.display = 'none';
+    // Hide toggles group
+    const tg = document.getElementById('tp-toggles-group');
+    if (tg) tg.style.display = 'none';
   });
 
   editTripBtn.addEventListener('click', () => openEditor(false));
@@ -483,6 +486,14 @@ function initTrip(data) {
   const actionsGroup = document.getElementById('tp-actions-group');
   if (actionsGroup) actionsGroup.style.display = 'flex';
 
+  // Show toggles group
+  const togglesGroup = document.getElementById('tp-toggles-group');
+  if (togglesGroup) togglesGroup.style.display = '';
+
+  // Sync gray-past toggle
+  const grayPastCb = document.getElementById('tp-toggle-gray-past');
+  if (grayPastCb) grayPastCb.checked = grayPastEnabled;
+
   const loadDocsBtn = document.getElementById('load-docs-btn');
   loadDocsBtn.style.display = ALL_REQUIRED_FILES.length > 0 ? 'flex' : 'none';
   updateDocsButtonState();
@@ -494,6 +505,9 @@ function initTrip(data) {
   document.querySelectorAll('.day-body, .location-body').forEach(b => {
     b.style.height = 'auto';
   });
+
+  // Apply past day visual states
+  applyPastDayClasses();
 
   positionRailLines();
   window.removeEventListener('scroll', positionRailLines);
@@ -594,6 +608,7 @@ function setCardStyle(style) {
   if (TRIP_CONFIG) {
     renderTimeline();
     positionRailLines();
+    applyPastDayClasses();
   }
   // Auto-save to config JSON if file system available
   autoSaveCardStyle(style);
@@ -686,3 +701,13 @@ window.toggleSettingsPopover = toggleSettingsPopover;
 window.moveSettingsToToolbar = moveSettingsToToolbar;
 window.restoreSettingsFromToolbar = restoreSettingsFromToolbar;
 window.applySettingsLabels = applySettingsLabels;
+window.toggleCardVisited = toggleCardVisited;
+window.toggleGrayPast = toggleGrayPast;
+window.applyPastDayClasses = applyPastDayClasses;
+window.toggleDayMap = toggleDayMap;
+window.initCountrySummaryMap = initCountrySummaryMap;
+window.toggleTripRouteMap = toggleTripRouteMap;
+window.edSearchLocation = edSearchLocation;
+window.edPickResult = edPickResult;
+window.edSelectLocation = edSelectLocation;
+window.edClearLocation = edClearLocation;
