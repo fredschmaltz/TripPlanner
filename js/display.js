@@ -75,17 +75,64 @@ function renderHeader() {
 // ─── Render Legend ───
 function renderLegend() {
   const legend = document.getElementById('trip-legend');
-  legend.innerHTML = `
-    <div class="legend-item"><div class="legend-dot" style="background:var(--transport-c)"></div>${t('legend.transport')}</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--stay-c)"></div>${t('legend.stay')}</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--temple-c)"></div>${t('legend.temple')}</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--museum-c)"></div>${t('legend.museum')}</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--park-c)"></div>${t('legend.park')}</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--market-c)"></div>${t('legend.market')}</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--viewpoint-c)"></div>${t('legend.viewpoint')}</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--nightlife-c)"></div>${t('legend.nightlife')}</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--street-c)"></div>${t('legend.district')}</div>
-  `;
+
+  // Collect all card types used in the trip
+  const usedTypes = new Set();
+  for (const day of DAYS) {
+    for (const card of day.cards || []) {
+      if (card.type) usedTypes.add(card.type);
+    }
+  }
+
+  // Map each card type to its legend category
+  const TYPE_TO_LEGEND = {
+    flight:    'transport', transit: 'transport', bus: 'transport',
+    ferry:     'transport', taxi:    'transport',
+    stay:      'stay',      checkout: 'stay',
+    temple:    'temple',
+    museum:    'museum',
+    park:      'park',
+    market:    'market',
+    viewpoint: 'viewpoint', monument: 'viewpoint',
+    nightlife: 'nightlife',
+    street:    'district',
+    aquarium:  'aquarium',
+    zoo:       'zoo',
+    activity:  'activity',
+  };
+
+  // Ordered legend entries: key → CSS color variable
+  const LEGEND_ENTRIES = [
+    { key: 'transport', color: 'var(--transport-c)' },
+    { key: 'stay',      color: 'var(--stay-c)' },
+    { key: 'temple',    color: 'var(--temple-c)' },
+    { key: 'museum',    color: 'var(--museum-c)' },
+    { key: 'park',      color: 'var(--park-c)' },
+    { key: 'market',    color: 'var(--market-c)' },
+    { key: 'viewpoint', color: 'var(--viewpoint-c)' },
+    { key: 'nightlife', color: 'var(--nightlife-c)' },
+    { key: 'district',  color: 'var(--street-c)' },
+    { key: 'aquarium',  color: 'var(--aquarium-c)' },
+    { key: 'zoo',       color: 'var(--zoo-c)' },
+    { key: 'activity',  color: 'var(--activity-c)' },
+  ];
+
+  // Determine which legend categories are present
+  const usedCategories = new Set();
+  for (const type of usedTypes) {
+    const cat = TYPE_TO_LEGEND[type];
+    if (cat) usedCategories.add(cat);
+  }
+
+  if (usedCategories.size === 0) {
+    legend.innerHTML = `<span class="legend-empty">${t('legend.empty')}</span>`;
+    return;
+  }
+
+  legend.innerHTML = LEGEND_ENTRIES
+    .filter(e => usedCategories.has(e.key))
+    .map(e => `<div class="legend-item"><div class="legend-dot" style="background:${e.color}"></div>${t('legend.' + e.key)}</div>`)
+    .join('');
 }
 
 // ─── Render Card ───
