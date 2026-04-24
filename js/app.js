@@ -536,6 +536,31 @@ function toggleSettingsPopover() {
   pop.classList.toggle('hidden');
 }
 
+// ─── Move settings gear in/out of editor toolbar for mobile ───
+let _settingsOriginalParent = null;
+let _settingsOriginalNext = null;
+
+function moveSettingsToToolbar() {
+  if (window.innerWidth > 600) return; // only on mobile
+  const wrap = document.getElementById('tp-settings-wrap');
+  const toolbarRight = document.querySelector('.editor-toolbar-right');
+  if (!wrap || !toolbarRight) return;
+  _settingsOriginalParent = wrap.parentNode;
+  _settingsOriginalNext = wrap.nextSibling;
+  // Insert before cancel button (first child of toolbar-right)
+  toolbarRight.insertBefore(wrap, toolbarRight.firstChild);
+  wrap.classList.add('in-toolbar');
+}
+
+function restoreSettingsFromToolbar() {
+  const wrap = document.getElementById('tp-settings-wrap');
+  if (!wrap || !_settingsOriginalParent) return;
+  wrap.classList.remove('in-toolbar');
+  _settingsOriginalParent.insertBefore(wrap, _settingsOriginalNext);
+  _settingsOriginalParent = null;
+  _settingsOriginalNext = null;
+}
+
 // ─── Card Style ───
 function setCardStyle(style) {
   currentCardStyle = style;
@@ -638,4 +663,6 @@ window.setLanguage = setLanguage;
 window.setCardStyle = setCardStyle;
 window.initSettingsBar = initSettingsBar;
 window.toggleSettingsPopover = toggleSettingsPopover;
+window.moveSettingsToToolbar = moveSettingsToToolbar;
+window.restoreSettingsFromToolbar = restoreSettingsFromToolbar;
 window.applySettingsLabels = applySettingsLabels;
