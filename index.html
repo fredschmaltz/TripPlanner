@@ -6,6 +6,8 @@
 <title>Trip Planner</title>
 <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="css/editor.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 </head>
 <body>
 
@@ -41,6 +43,13 @@
         <button class="tp-action-item" id="tp-pop-edit" onclick="openEditor(false);toggleSettingsPopover()">✏️ Edit</button>
         <button class="tp-action-item" id="tp-pop-change" onclick="document.getElementById('change-trip-btn').click();toggleSettingsPopover()">📋 Change</button>
       </div>
+    </div>
+    <div class="tp-settings-group tp-settings-toggles" id="tp-toggles-group" style="display:none">
+      <span class="tp-settings-label" id="tp-lbl-toggles">Options</span>
+      <label class="tp-toggle-check">
+        <input type="checkbox" id="tp-toggle-gray-past" onchange="toggleGrayPast(this.checked)">
+        <span id="tp-lbl-gray-past">Gray past days</span>
+      </label>
     </div>
   </div>
 </div>
@@ -82,6 +91,13 @@
     <div class="docs-panel-list" id="docs-list"></div>
   </div>
   <div id="card-overlay"></div>
+  <div id="trip-route-overlay" class="trip-route-overlay hidden">
+    <div class="trip-route-header">
+      <span class="trip-route-title" id="trip-route-title">Trip Route</span>
+      <button class="trip-route-close" onclick="toggleTripRouteMap()">&times;</button>
+    </div>
+    <div id="trip-route-map" class="trip-route-map-container"></div>
+  </div>
   <header id="trip-header"></header>
   <div class="legend" id="trip-legend"></div>
   <div class="timeline" id="timeline"></div>
