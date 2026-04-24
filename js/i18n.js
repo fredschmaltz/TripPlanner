@@ -185,8 +185,17 @@ const TRANSLATIONS = {
   'ed.subtitleDetails':        'Subtitle / Details',
   'ed.cityOverride':           'City Override (optional)',
   'ed.cityOverrideHint':       "Leave empty for day's city",
-  'ed.mapsAddress':            'Maps / Address',
-  'ed.mapsHint':               'Full address for Google Maps',
+  'ed.mapsAddress':            'Location',
+  'ed.mapsHint':               'Search place or enter lat, lng',
+  'ed.mapsDeparture':          'Departure',
+  'ed.mapsArrival':            'Arrival',
+  'ed.mapsDepartureHint':      'Search departure or enter lat, lng',
+  'ed.mapsArrivalHint':        'Search arrival or enter lat, lng',
+  'ed.locSearch':              'Search',
+  'ed.locClear':               'Clear location',
+  'ed.locSearching':           'Searching…',
+  'ed.locNoResults':           'No results found',
+  'ed.locSearchFailed':        'Search failed',
   'ed.phone':                  'Phone',
   'ed.email':                  'Email',
   'ed.tags':                   'Tags',
@@ -276,6 +285,22 @@ const TRANSLATIONS = {
   'ui.bento':                  'Bento',
   'ui.minimal':                'Minimal',
   'ui.actions':                'Actions',
+  'ui.options':                'Options',
+  'ui.grayPast':               'Gray past days',
+
+  // ─── Visited / Map / Expenses ───
+  'visited.done':              'Done',
+  'visited.markDone':          'Mark as done',
+  'visited.markUndone':        'Mark as not done',
+  'map.dayRoute':              'Route Map',
+  'map.showMap':               'Map',
+  'map.hideMap':               'Hide Map',
+  'map.noCoords':              'No coordinates available',
+  'map.tripRoute':             'Trip Route',
+  'card.departure':            'Departure',
+  'card.arrival':              'Arrival',
+  'summary.totalExpense':      'total',
+  'summary.projected':         'projected',
 
   // ─── Placeholders that contain example content ───
   'ph.subtitle':               'e.g. 28 April \u2013 22 May \u00B7 25 days \u00B7 6 cities',
@@ -474,8 +499,17 @@ const TRANSLATIONS_PTBR = {
   'ed.subtitleDetails':        'Subt\u00EDtulo / Detalhes',
   'ed.cityOverride':           'Cidade (opcional)',
   'ed.cityOverrideHint':       'Deixe vazio para usar a cidade do dia',
-  'ed.mapsAddress':            'Mapa / Endere\u00E7o',
-  'ed.mapsHint':               'Endere\u00E7o completo para o Google Maps',
+  'ed.mapsAddress':            'Localiza\u00E7\u00E3o',
+  'ed.mapsHint':               'Buscar local ou digitar lat, lng',
+  'ed.mapsDeparture':          'Partida',
+  'ed.mapsArrival':            'Chegada',
+  'ed.mapsDepartureHint':      'Buscar partida ou digitar lat, lng',
+  'ed.mapsArrivalHint':        'Buscar chegada ou digitar lat, lng',
+  'ed.locSearch':              'Buscar',
+  'ed.locClear':               'Limpar localiza\u00E7\u00E3o',
+  'ed.locSearching':           'Buscando\u2026',
+  'ed.locNoResults':           'Nenhum resultado encontrado',
+  'ed.locSearchFailed':        'Falha na busca',
   'ed.phone':                  'Telefone',
   'ed.email':                  'E-mail',
   'ed.tags':                   'Tags',
@@ -565,6 +599,22 @@ const TRANSLATIONS_PTBR = {
   'ui.bento':                  'Bento',
   'ui.minimal':                'Minimal',
   'ui.actions':                'A\u00E7\u00F5es',
+  'ui.options':                'Op\u00E7\u00F5es',
+  'ui.grayPast':               'Dias passados em cinza',
+
+  // ─── Visited / Map / Expenses ───
+  'visited.done':              'Feito',
+  'visited.markDone':          'Marcar como feito',
+  'visited.markUndone':        'Marcar como n\u00E3o feito',
+  'map.dayRoute':              'Mapa da Rota',
+  'map.showMap':               'Mapa',
+  'map.hideMap':               'Ocultar Mapa',
+  'map.noCoords':              'Sem coordenadas dispon\u00EDveis',
+  'map.tripRoute':             'Rota da Viagem',
+  'card.departure':            'Partida',
+  'card.arrival':              'Chegada',
+  'summary.totalExpense':      'total',
+  'summary.projected':         'projetado',
 
   // ─── Placeholders ───
   'ph.subtitle':               'ex: 28 Abril \u2013 22 Maio \u00B7 25 dias \u00B7 6 cidades',
@@ -620,6 +670,7 @@ function setLanguage(lang) {
     renderLegend();
     renderTimeline();
     positionRailLines();
+    applyPastDayClasses();
   } else {
     applyPickerTranslations();
   }
@@ -735,6 +786,10 @@ function applySettingsLabels() {
   if (lblStyle) lblStyle.textContent = t('ui.cardStyle');
   const lblActions = document.getElementById('tp-lbl-actions');
   if (lblActions) lblActions.textContent = t('ui.actions');
+  const lblToggles = document.getElementById('tp-lbl-toggles');
+  if (lblToggles) lblToggles.textContent = t('ui.options');
+  const lblGrayPast = document.getElementById('tp-lbl-gray-past');
+  if (lblGrayPast) lblGrayPast.textContent = t('ui.grayPast');
   // Update theme button text
   document.querySelectorAll('.tp-theme-btn').forEach(b => {
     b.textContent = b.dataset.theme === 'dark' ? t('ui.dark') : t('ui.light');
