@@ -191,7 +191,6 @@ header h1 {
   position: relative;
 }
 header h1 em {
-  font-style: italic;
   color: var(--accent);
 }
 header .subtitle {
@@ -453,8 +452,8 @@ header .subtitle {
 ══════════════════════════════════════════ */
 .food-panel {
   display: none;
-  background: #12100a;
-  border-bottom: 1px solid #3a2a10;
+  background: var(--food-bg, #12100a);
+  border-bottom: 1px solid var(--food-border, #3a2a10);
   padding: 0 16px;
   max-height: 0;
   overflow: hidden;
@@ -480,14 +479,14 @@ header .subtitle {
 .food-tip {
   display: flex;
   gap: 10px;
-  background: #1a150a;
-  border: 1px solid #3a2a10;
+  background: var(--food-tip-bg, #1a150a);
+  border: 1px solid var(--food-border, #3a2a10);
   border-radius: 8px;
   padding: 10px 12px;
 }
 .food-emoji { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
-.food-dish { font-size: 0.82rem; font-weight: 600; color: #e8c070; margin-bottom: 2px; }
-.food-desc { font-size: 0.74rem; color: #a88050; line-height: 1.45; }
+.food-dish { font-size: 0.82rem; font-weight: 600; color: var(--food-dish, #e8c070); margin-bottom: 2px; }
+.food-desc { font-size: 0.74rem; color: var(--food-desc, #a88050); line-height: 1.45; }
 
 /* ══════════════════════════════════════════
    CARDS WRAPPER
@@ -678,26 +677,42 @@ header .subtitle {
 .tip-bullet { color: var(--card-color, var(--accent)); flex-shrink: 0; margin-top: 1px; }
 .tip-text { color: #b0b0c0; }
 
-/* Close / shrink button */
-.card-close-btn {
-  display: flex;
+/* Close X button — inside exp-header, only visible when expanded */
+.card-close-x {
+  display: none;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  padding: 6px;
-  margin-top: 8px;
-  border: none;
-  border-top: 1px solid var(--border);
-  background: none;
-  color: var(--dim);
-  font-size: 0.72rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1;
   cursor: pointer;
-  transition: color var(--transition);
-  font-family: 'Segoe UI', 'SF Pro Display', -apple-system, system-ui, sans-serif;
-  letter-spacing: 0.3px;
-  gap: 4px;
+  transition: all var(--transition);
+  flex-shrink: 0;
+  padding: 0;
+  font-family: inherit;
+  margin-left: auto;
 }
-.card-close-btn:hover { color: var(--muted); }
+.card.expanded .card-close-x { display: flex; }
+.card-close-x:hover {
+  border-color: var(--card-color, var(--border2));
+  color: var(--text);
+  background: var(--surface);
+}
+
+/* Badge row in collapsed cards (classic style) */
+.card-badges {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 
 /* ── Transport route in expanded ── */
 .exp-route {
@@ -1352,6 +1367,18 @@ header .subtitle {
 [data-theme="light"] .day-food-btn:hover { border-color: #b88030; color: #8a6000; background: #fef0d810; }
 [data-theme="light"] .day-food-btn.active { border-color: #b88030; color: #8a6000; background: #fef0d830; }
 
+/* Light theme: food panel */
+[data-theme="light"] .food-panel { --food-bg: #fdf6ec; --food-border: #e8d6b0; --food-tip-bg: #fef9f0; --food-dish: #8a6000; --food-desc: #7a6030; }
+[data-theme="light"] .food-tip { background: var(--food-tip-bg); border-color: var(--food-border); }
+[data-theme="light"] .food-dish { color: var(--food-dish); }
+[data-theme="light"] .food-desc { color: var(--food-desc); }
+
+/* Light theme: card top actions */
+[data-theme="light"] .card-visited-bubble { background: #e0e4ea; border-color: #c0c4cc; color: #888; }
+[data-theme="light"] .card-visited-bubble.active { background: #43a047; border-color: #388e3c; color: #fff; }
+[data-theme="light"] .card-close-x { background: #e8e8ec; color: #666; border-color: #d0d0d8; }
+[data-theme="light"] .card-close-x:hover { background: #f44336; color: #fff; border-color: #d32f2f; }
+
 /* Light theme: tip text */
 [data-theme="light"] .tip-text { color: #4a4b60; }
 
@@ -1750,6 +1777,7 @@ header .subtitle {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
+  flex-wrap: wrap;
   align-items: center;
 }
 .minimal-arrow {
@@ -1841,8 +1869,44 @@ header .subtitle {
 }
 
 /* ══════════════════════════════════════════
-   VISITED / DONE CARDS
+   VISITED / DONE CARDS — Floating Bubble
 ══════════════════════════════════════════ */
+
+/* (card-top-actions removed — visited bubble is now inline in badge row) */
+
+/* Floating visited bubble */
+.card-visited-bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.card-visited-bubble:hover {
+  border-color: #6fcf97;
+  background: #6fcf9718;
+  color: #6fcf9780;
+}
+.card-visited-bubble.active {
+  border-color: #6fcf97;
+  background: #6fcf97;
+  color: #fff;
+  box-shadow: 0 0 8px #6fcf9740;
+}
+.card-visited-bubble.active:hover {
+  background: #5abf87;
+  border-color: #5abf87;
+  color: #fff;
+}
+
 .card-visited {
   opacity: 0.55;
   border-left-color: #6fcf97 !important;
@@ -1857,47 +1921,6 @@ header .subtitle {
   opacity: 0.25;
   pointer-events: none;
 }
-.card-visited-dot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: #6fcf97;
-  color: #000;
-  font-size: 0.6rem;
-  font-weight: 700;
-  flex-shrink: 0;
-  line-height: 1;
-}
-.card-visited-btn {
-  padding: 6px 16px;
-  border-radius: 8px;
-  border: 1px solid var(--border2);
-  background: transparent;
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all var(--transition);
-}
-.card-visited-btn:hover {
-  border-color: #6fcf97;
-  color: #6fcf97;
-  background: #6fcf9712;
-}
-.card-visited-btn.active {
-  border-color: #6fcf97;
-  color: #6fcf97;
-  background: #6fcf9718;
-}
-.exp-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 8px;
-}
 
 /* ══════════════════════════════════════════
    PAST DAY GRAYING + HIGHLIGHTS
@@ -1910,6 +1933,12 @@ header .subtitle {
   opacity: 0.75;
   filter: saturate(0.7);
 }
+/* Ensure visited bubble stays interactive on past days */
+.day-past .card-visited-bubble {
+  opacity: 1;
+  filter: saturate(2.5);
+  pointer-events: auto;
+}
 .day-past-unvisited {
   opacity: 0.6;
 }
@@ -1921,9 +1950,22 @@ header .subtitle {
 .day-past-all-unvisited .day-header {
   background: #e8a85a08;
 }
+/* Pulsing glow on past unvisited cards */
 .card-past-unvisited {
   border-left-color: #e8a85a !important;
-  box-shadow: inset 0 0 0 1px #e8a85a25;
+  animation: pastGlow 2.5s ease-in-out infinite;
+}
+@keyframes pastGlow {
+  0%, 100% { box-shadow: 0 0 4px #e8a85a20, inset 0 0 0 1px #e8a85a15; }
+  50%      { box-shadow: 0 0 14px #e8a85a40, inset 0 0 0 1px #e8a85a30; }
+}
+.card-past-unvisited .card-visited-bubble {
+  border-color: #e8a85a;
+  animation: bubblePulse 2.5s ease-in-out infinite;
+}
+@keyframes bubblePulse {
+  0%, 100% { box-shadow: 0 0 0 0 #e8a85a00; }
+  50%      { box-shadow: 0 0 0 4px #e8a85a30; }
 }
 
 /* ══════════════════════════════════════════
@@ -2094,4 +2136,155 @@ header .subtitle {
   flex: 1;
   min-height: 0;
   width: 100%;
+}
+
+/* ══════════════════════════════════════════
+   TIMELINE CONTROLS — Search & View Mode
+══════════════════════════════════════════ */
+.timeline-controls {
+  display: none; /* shown by JS when trip loads via style.display = 'flex' */
+  max-width: 820px;
+  margin: 16px auto 0;
+  padding: 0 16px;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Search bar */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 6px 12px;
+  transition: border-color var(--transition);
+}
+.search-bar:focus-within { border-color: var(--accent); }
+.search-icon { font-size: 0.85rem; color: var(--dim); flex-shrink: 0; }
+.search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  min-width: 0;
+}
+.search-input::placeholder { color: var(--dim); }
+.search-clear {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.search-clear:hover { color: var(--text); }
+
+/* View mode bar */
+.view-mode-bar {
+  display: flex;
+  gap: 0;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.view-mode-btn {
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.view-mode-btn:hover { color: var(--text); background: var(--surface2); }
+.view-mode-btn.active { background: var(--accent); color: var(--bg); }
+[data-theme="light"] .view-mode-btn.active { color: #fff; }
+
+/* Pagination nav */
+.view-page-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  max-width: 820px;
+  margin: 8px auto 0;
+  padding: 0 16px;
+}
+.view-nav-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+.view-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+.view-page-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  font-family: 'Consolas', monospace;
+}
+
+/* Search hidden / view hidden */
+.search-hidden { display: none !important; }
+.view-hidden { display: none !important; }
+
+/* Search highlight */
+.search-hl {
+  background: #f0c07050;
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+[data-theme="light"] .search-hl {
+  background: #f0c07080;
+}
+
+/* No results */
+.timeline-no-results {
+  text-align: center;
+  padding: 32px 16px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+/* ── Mobile responsive for timeline controls ── */
+@media (max-width: 560px) {
+  .timeline-controls {
+    padding: 0 8px;
+    gap: 6px;
+  }
+  .search-bar { padding: 5px 8px; border-radius: 8px; }
+  .search-input { font-size: 16px; } /* prevent iOS zoom */
+  .view-mode-btn { padding: 5px 8px; font-size: 0.65rem; }
+  .view-page-nav { gap: 10px; }
+  .view-nav-btn { width: 28px; height: 28px; font-size: 0.95rem; }
+  .view-page-label { font-size: 0.7rem; }
+  .card-badges { gap: 3px; }
+  .card-visited-bubble { width: 20px; height: 20px; }
+  .card-close-x { width: 20px; height: 20px; font-size: 0.85rem; }
 }
