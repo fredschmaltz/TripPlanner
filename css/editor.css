@@ -592,16 +592,16 @@
   .editor-section-title { font-size: 0.82rem; }
   .editor-section-body { padding: 10px 12px; }
 
-  /* Form fields — stack vertically */
+  /* Form fields — keep rows horizontal but allow wrapping */
   .editor-row {
-    flex-direction: column;
-    gap: 0;
+    flex-wrap: wrap;
+    gap: 8px;
   }
   .editor-row > .editor-field {
-    margin-bottom: 10px;
-    flex: 1 1 100% !important;   /* override inline flex values */
+    margin-bottom: 0;
+    min-width: 0;
   }
-  .editor-field { margin-bottom: 10px; }
+  .editor-field { margin-bottom: 8px; }
   .editor-label { font-size: 0.65rem; }
   .editor-input,
   .editor-select,
@@ -609,10 +609,18 @@
     font-size: 16px;  /* prevents iOS zoom on focus */
     padding: 8px 10px;
     height: 38px;
+    min-width: 0;
+    box-sizing: border-box;
   }
-  /* Icon emoji select: full width on mobile */
+  /* Date & time: prevent overflow in flex rows */
+  input[type="date"].editor-input,
+  input[type="time"].editor-input {
+    min-width: 0;
+    overflow: hidden;
+  }
+  /* Icon emoji select: keep compact on mobile */
   .editor-emoji-select {
-    width: 100%;
+    width: 56px;
     height: 38px;
   }
 
@@ -712,6 +720,68 @@
 
   /* Toast */
   .editor-toast { padding: 8px 18px; font-size: 0.78rem; bottom: 16px; }
+}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE — Landscape phone
+══════════════════════════════════════════ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .editor-toolbar { padding: 6px 12px; }
+  .editor-body { padding: 6px 8px; }
+  .editor-body-inner { gap: 6px; padding-bottom: 30px; }
+  .editor-section-header { padding: 8px 10px; }
+  .editor-section-body { padding: 8px 10px; }
+
+  /* Keep rows horizontal */
+  .editor-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .editor-row > .editor-field {
+    min-width: 0;
+    margin-bottom: 0;
+  }
+
+  /* Uniform input heights */
+  .editor-input,
+  .editor-select,
+  .editor-textarea {
+    height: 34px;
+    font-size: 14px;
+    padding: 6px 8px;
+  }
+  .editor-emoji-select {
+    height: 34px;
+    width: 52px;
+  }
+
+  /* Day: city + date same height */
+  .editor-city-select-wrap { height: 34px; }
+  .editor-city-select-wrap .editor-select { height: 34px; }
+  input[type="date"].editor-input {
+    height: 34px;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* Card: start + end time same height, no overflow */
+  input[type="time"].editor-input {
+    height: 34px;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .editor-time-start,
+  .editor-time-end {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .editor-label { font-size: 0.6rem; }
+  .editor-day-header { padding: 6px 8px; gap: 4px; }
+  .editor-day-title { font-size: 0.72rem; }
+  .editor-card-header { padding: 6px 8px; gap: 4px; }
+  .editor-card-title { font-size: 0.7rem; }
 }
 
 /* ── Disabled section (no route) ── */
