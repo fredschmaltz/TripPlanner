@@ -252,12 +252,11 @@ function renderCard(c, dayColor, dayFiles, cityPill, dayIdx, cardIdx) {
   if (c.email) quickBtns.push(`<a class="card-quick-btn" href="mailto:${c.email}" onclick="event.stopPropagation()">✉️</a>`);
 
   const visitedClass = c.visited ? ' card-visited' : '';
-  const visitedBtnTitle = c.visited ? t('visited.markUndone') : t('visited.markDone');
-  const visitedBtnLabel = c.visited ? `✓ ${t('visited.done')}` : t('visited.markDone');
-  const visitedToggle = (typeof dayIdx === 'number' && typeof cardIdx === 'number')
-    ? `<button class="card-visited-btn${c.visited ? ' active' : ''}" onclick="event.stopPropagation();toggleCardVisited(${dayIdx},${cardIdx})" title="${visitedBtnTitle}">${visitedBtnLabel}</button>`
+  const visitedBubbleTitle = c.visited ? t('visited.markUndone') : t('visited.markDone');
+  const visitedBubble = (typeof dayIdx === 'number' && typeof cardIdx === 'number')
+    ? `<button class="card-visited-bubble${c.visited ? ' active' : ''}" onclick="event.stopPropagation();toggleCardVisited(${dayIdx},${cardIdx})" title="${visitedBubbleTitle}"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5.5L4 7.5L8 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`
     : '';
-  const visitedDot = c.visited ? '<span class="card-visited-dot" title="' + t('visited.done') + '">✓</span>' : '';
+  const closeXBtn = `<button class="card-close-x" onclick="collapseCard(event)" title="${t('card.close')}">&times;</button>`;
 
   // Shared expanded HTML (same for all card styles)
   const expandedHTML = `
@@ -270,16 +269,13 @@ function renderCard(c, dayColor, dayFiles, cityPill, dayIdx, cardIdx) {
           ${(c.sub && c.type !== 'stay') ? `<div class="exp-sub">${c.sub}</div>` : ''}
         </div>
         <div class="exp-time">${c.time || ''}</div>
+        ${closeXBtn}
       </div>
       ${expMain}
       ${contactsHTML ? `<div class="exp-contacts">${contactsHTML}</div>` : ''}
       ${filesHTML}
       ${tags.length ? `<div class="exp-tags">${tags.map(renderTag).join('')}</div>` : ''}
       ${tipsHTML}
-      <div class="exp-footer">
-        ${visitedToggle}
-        <button class="card-close-btn" onclick="collapseCard(event)">${t('card.collapse')}</button>
-      </div>
     </div>`;
 
   const style = currentCardStyle || 'classic';
@@ -297,7 +293,7 @@ function renderCard(c, dayColor, dayFiles, cityPill, dayIdx, cardIdx) {
       <div class="card-collapsed bento-collapsed">
         <div class="bento-top">
           <span class="bento-badge" style="color:${colorVar}"><span class="bento-dot" style="background:${colorVar}"></span>${meta.label}</span>
-          <span class="bento-time">${c.time || ''}${visitedDot ? ' ' + visitedDot : ''}</span>
+          <span class="bento-time">${c.time || ''}</span>
         </div>
         ${routeHTML}
         ${subHTML}
@@ -305,6 +301,7 @@ function renderCard(c, dayColor, dayFiles, cityPill, dayIdx, cardIdx) {
           ${tags.map(tg => `<span class="bento-chip bento-chip-${tg.cls || 'default'}">${tg.label}</span>`).join('')}
           ${fileCountBadge}
           ${quickBtns.join('')}
+          ${visitedBubble}
         </div>
       </div>
       ${expandedHTML}
@@ -329,9 +326,9 @@ function renderCard(c, dayColor, dayFiles, cityPill, dayIdx, cardIdx) {
         <div class="minimal-pills">
           ${tags.map(renderTag).join('')}
           ${fileCountBadge}
-          ${visitedDot}
+          ${quickBtns.join('')}
+          ${visitedBubble}
         </div>
-        ${quickBtns.join('')}
         <span class="minimal-arrow">→</span>
       </div>
       ${expandedHTML}
@@ -348,11 +345,11 @@ function renderCard(c, dayColor, dayFiles, cityPill, dayIdx, cardIdx) {
         <div class="card-type-label">${meta.label}</div>
         ${collapsedInner}
       </div>
-      <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+      <div class="card-badges">
         ${tags.map(renderTag).join('')}
         ${fileCountBadge}
-        ${visitedDot}
         ${quickBtns.join('')}
+        ${visitedBubble}
       </div>
     </div>
     ${expandedHTML}
@@ -748,25 +745,11 @@ function toggleCardVisited(dayIdx, cardIdx) {
   const cardEl = document.querySelector(`.card[data-day="${dayIdx}"][data-card="${cardIdx}"]`);
   if (cardEl) {
     cardEl.classList.toggle('card-visited', card.visited);
-    // Update the visited button in expanded view
-    const btn = cardEl.querySelector('.card-visited-btn');
-    if (btn) {
-      btn.classList.toggle('active', card.visited);
-      btn.textContent = card.visited ? `✓ ${t('visited.done')}` : t('visited.markDone');
-      btn.title = card.visited ? t('visited.markUndone') : t('visited.markDone');
-    }
-    // Update visited dot in collapsed view
-    let dot = cardEl.querySelector('.card-visited-dot');
-    if (card.visited && !dot) {
-      dot = document.createElement('span');
-      dot.className = 'card-visited-dot';
-      dot.title = t('visited.done');
-      dot.textContent = '✓';
-      // Insert in the right spot depending on card style
-      const target = cardEl.querySelector('.bento-time, .minimal-pills, .card-collapsed > div:last-child');
-      if (target) target.appendChild(dot);
-    } else if (!card.visited && dot) {
-      dot.remove();
+    // Update the floating visited bubble
+    const bubble = cardEl.querySelector('.card-visited-bubble');
+    if (bubble) {
+      bubble.classList.toggle('active', card.visited);
+      bubble.title = card.visited ? t('visited.markUndone') : t('visited.markDone');
     }
     // Update past-day highlights
     applyPastDayClasses();
@@ -1116,4 +1099,246 @@ async function initTripRouteMap() {
 
   map.fitBounds(bounds.pad(0.15));
   setTimeout(() => map.invalidateSize(), 200);
+}
+
+// ══════════════════════════════════════════
+//  TIMELINE SEARCH & FILTER
+// ══════════════════════════════════════════
+
+let _searchDebounce = null;
+let _currentSearchQuery = '';
+
+function initTimelineSearch() {
+  const input = document.getElementById('timeline-search-input');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    clearTimeout(_searchDebounce);
+    _searchDebounce = setTimeout(() => applyTimelineSearch(input.value.trim()), 180);
+  });
+}
+
+function clearTimelineSearch() {
+  const input = document.getElementById('timeline-search-input');
+  if (input) input.value = '';
+  _currentSearchQuery = '';
+  applyTimelineSearch('');
+}
+
+function applyTimelineSearch(query) {
+  _currentSearchQuery = query;
+  const timeline = document.getElementById('timeline');
+  if (!timeline) return;
+
+  // Remove previous highlights
+  timeline.querySelectorAll('.search-hl').forEach(el => {
+    const parent = el.parentNode;
+    parent.replaceChild(document.createTextNode(el.textContent), el);
+    parent.normalize();
+  });
+
+  const noResults = document.getElementById('timeline-no-results');
+  if (!query) {
+    // Show everything
+    timeline.querySelectorAll('.day').forEach(d => d.classList.remove('search-hidden'));
+    timeline.querySelectorAll('.card').forEach(c => c.classList.remove('search-hidden'));
+    timeline.querySelectorAll('.country-rail, .location-group').forEach(el => el.classList.remove('search-hidden'));
+    if (noResults) noResults.classList.add('hidden');
+    return;
+  }
+
+  const lowerQ = query.toLowerCase();
+  let anyMatch = false;
+
+  // Iterate through each day
+  DAYS.forEach((day, di) => {
+    const dayEl = timeline.querySelector(`.day[data-day-index="${di}"]`);
+    if (!dayEl) return;
+
+    // Check day-level text: date, city
+    const dayText = [day.date, day.city, day.parentCity || ''].join(' ').toLowerCase();
+    const dayMatch = dayText.includes(lowerQ);
+
+    let anyCardMatch = false;
+    (day.cards || []).forEach((card, ci) => {
+      const cardEl = dayEl.querySelector(`.card[data-day="${di}"][data-card="${ci}"]`);
+      if (!cardEl) return;
+
+      const cardText = [
+        card.title, card.sub, card.from, card.to, card.carrier,
+        card.time, card.city || '',
+        ...(card.tips || []),
+        ...(Array.isArray(card.tags) ? card.tags : (card.tags || '').split(','))
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      const match = cardText.includes(lowerQ) || dayMatch;
+      cardEl.classList.toggle('search-hidden', !match);
+      if (match) anyCardMatch = true;
+    });
+
+    const visible = dayMatch || anyCardMatch;
+    dayEl.classList.toggle('search-hidden', !visible);
+    if (visible) anyMatch = true;
+
+    // Highlight matching text in visible cards
+    if (visible && query.length >= 2) {
+      highlightTextInElement(dayEl, query);
+    }
+  });
+
+  // Hide empty location groups and country rails
+  timeline.querySelectorAll('.location-group').forEach(lg => {
+    const hasVisible = lg.querySelector('.day:not(.search-hidden)');
+    lg.classList.toggle('search-hidden', !hasVisible);
+  });
+  timeline.querySelectorAll('.country-rail').forEach(cr => {
+    const hasVisible = cr.querySelector('.location-group:not(.search-hidden)');
+    cr.classList.toggle('search-hidden', !hasVisible);
+  });
+
+  if (noResults) noResults.classList.toggle('hidden', anyMatch);
+}
+
+/** Walk text nodes inside an element and wrap matching substrings with <mark> */
+function highlightTextInElement(container, query) {
+  const lowerQ = query.toLowerCase();
+  const textNodes = [];
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      // Skip script/style, hidden elements, and already-highlighted
+      const p = node.parentElement;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      if (p.tagName === 'SCRIPT' || p.tagName === 'STYLE') return NodeFilter.FILTER_REJECT;
+      if (p.classList.contains('search-hl')) return NodeFilter.FILTER_REJECT;
+      if (p.closest('.search-hidden')) return NodeFilter.FILTER_REJECT;
+      if (p.closest('.card-expanded')) return NodeFilter.FILTER_REJECT; // Only highlight collapsed
+      if (node.textContent.toLowerCase().includes(lowerQ)) return NodeFilter.FILTER_ACCEPT;
+      return NodeFilter.FILTER_REJECT;
+    }
+  });
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  for (const node of textNodes) {
+    const text = node.textContent;
+    const idx = text.toLowerCase().indexOf(lowerQ);
+    if (idx === -1) continue;
+
+    const before = document.createTextNode(text.substring(0, idx));
+    const mark = document.createElement('mark');
+    mark.className = 'search-hl';
+    mark.textContent = text.substring(idx, idx + query.length);
+    const after = document.createTextNode(text.substring(idx + query.length));
+
+    const parent = node.parentNode;
+    parent.insertBefore(before, node);
+    parent.insertBefore(mark, node);
+    parent.insertBefore(after, node);
+    parent.removeChild(node);
+  }
+}
+
+// ══════════════════════════════════════════
+//  VIEW MODE (Pagination)
+// ══════════════════════════════════════════
+
+let currentViewMode = 'all'; // 'all' | 'byDay' | 'byCity' | 'paged'
+let currentPage = 0;
+const PAGE_SIZE = 5; // days per page in 'paged' mode
+
+function setViewMode(mode) {
+  currentViewMode = mode;
+  currentPage = 0;
+  document.querySelectorAll('.view-mode-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === mode)
+  );
+  applyViewMode();
+}
+
+function viewPrev() {
+  if (currentPage > 0) { currentPage--; applyViewMode(); }
+}
+
+function viewNext() {
+  const maxPage = getMaxPage();
+  if (currentPage < maxPage) { currentPage++; applyViewMode(); }
+}
+
+function getMaxPage() {
+  if (currentViewMode === 'byDay') return Math.max(0, DAYS.length - 1);
+  if (currentViewMode === 'byCity') {
+    const groups = document.querySelectorAll('.location-group');
+    return Math.max(0, groups.length - 1);
+  }
+  if (currentViewMode === 'paged') return Math.max(0, Math.ceil(DAYS.length / PAGE_SIZE) - 1);
+  return 0;
+}
+
+function applyViewMode() {
+  const timeline = document.getElementById('timeline');
+  if (!timeline) return;
+
+  const nav = document.getElementById('view-page-nav');
+  const pageLabel = document.getElementById('view-page-label');
+  const allDays = Array.from(timeline.querySelectorAll('.day'));
+  const allGroups = Array.from(timeline.querySelectorAll('.location-group'));
+  const allRails = Array.from(timeline.querySelectorAll('.country-rail'));
+
+  // Reset visibility (respect search filter)
+  allDays.forEach(d => d.classList.remove('view-hidden'));
+  allGroups.forEach(g => g.classList.remove('view-hidden'));
+  allRails.forEach(r => r.classList.remove('view-hidden'));
+
+  if (currentViewMode === 'all') {
+    if (nav) nav.classList.add('hidden');
+    positionRailLines();
+    return;
+  }
+
+  if (nav) nav.classList.remove('hidden');
+
+  if (currentViewMode === 'byDay') {
+    allDays.forEach((d, i) => {
+      d.classList.toggle('view-hidden', i !== currentPage);
+    });
+    // Hide location groups/rails that have no visible days
+    allGroups.forEach(g => {
+      const hasVisible = g.querySelector('.day:not(.view-hidden):not(.search-hidden)');
+      g.classList.toggle('view-hidden', !hasVisible);
+    });
+    allRails.forEach(r => {
+      const hasVisible = r.querySelector('.location-group:not(.view-hidden)');
+      r.classList.toggle('view-hidden', !hasVisible);
+    });
+    if (pageLabel) pageLabel.textContent = `${currentPage + 1} ${t('view.pageOf')} ${DAYS.length}`;
+  }
+
+  if (currentViewMode === 'byCity') {
+    allGroups.forEach((g, i) => {
+      g.classList.toggle('view-hidden', i !== currentPage);
+    });
+    allRails.forEach(r => {
+      const hasVisible = r.querySelector('.location-group:not(.view-hidden)');
+      r.classList.toggle('view-hidden', !hasVisible);
+    });
+    if (pageLabel) pageLabel.textContent = `${currentPage + 1} ${t('view.pageOf')} ${allGroups.length}`;
+  }
+
+  if (currentViewMode === 'paged') {
+    const start = currentPage * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    allDays.forEach((d, i) => {
+      d.classList.toggle('view-hidden', i < start || i >= end);
+    });
+    allGroups.forEach(g => {
+      const hasVisible = g.querySelector('.day:not(.view-hidden):not(.search-hidden)');
+      g.classList.toggle('view-hidden', !hasVisible);
+    });
+    allRails.forEach(r => {
+      const hasVisible = r.querySelector('.location-group:not(.view-hidden)');
+      r.classList.toggle('view-hidden', !hasVisible);
+    });
+    const totalPages = Math.ceil(DAYS.length / PAGE_SIZE);
+    if (pageLabel) pageLabel.textContent = `${currentPage + 1} ${t('view.pageOf')} ${totalPages}`;
+  }
+
+  positionRailLines();
 }
