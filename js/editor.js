@@ -282,6 +282,13 @@ async function saveTrip() {
     delete config.trip.customBadges;
   }
 
+  // Clean up route stops (remove empty lat/lng)
+  if (config.trip.route) {
+    for (const r of config.trip.route) {
+      if (!r.lat || !r.lng) { delete r.lat; delete r.lng; }
+    }
+  }
+
   // Persist current card style preference
   config.trip.cardStyle = currentCardStyle;
 
@@ -415,17 +422,37 @@ function renderRouteSection() {
       const sel = r.flag === c.flag ? ' selected' : '';
       return `<option value="${c.flag}"${sel}>${c.flag} ${c.name}</option>`;
     }).join('');
+    const hasCoords = r.lat && r.lng;
+    const coordBadge = hasCoords
+      ? `<span class="editor-loc-coord" style="font-size:0.6rem;margin-left:4px" title="${r.lat}, ${r.lng}">📍</span>`
+      : '';
+    const qId = `route-city-q-${i}`;
+    const rId = `route-city-r-${i}`;
     return `
-    <div class="editor-inline-row">
-      <input type="color" class="editor-color-input editor-route-color" value="${r.color || '#aaaaaa'}" oninput="editorData.trip.route[${i}].color=this.value;edSyncRouteColorToDays(${i})">
-      <select class="editor-inline-input editor-flag-select" onchange="editorData.trip.route[${i}].flag=this.value;edSyncRouteFlagToDays(${i});refreshSection('route')">
-        <option value="">${t('ed.selectCountry')}</option>
-        ${currentFlagOptions}
-      </select>
-      <input class="editor-inline-input city-input" value="${escHtml(r.city || '')}" oninput="edRenameRouteCity(${i},this.value);refreshSection('days');refreshSection('trip-info')" placeholder="${t('ed.cityName')}">
-      <button class="editor-move-btn" onclick="edMoveRoute(${i},-1)" title="${t('ed.moveUp')}">↑</button>
-      <button class="editor-move-btn" onclick="edMoveRoute(${i},1)" title="${t('ed.moveDown')}">↓</button>
-      <button class="editor-remove-btn" onclick="edRemoveRoute(${i})" title="${t('ed.remove')}">✕</button>
+    <div class="editor-inline-row" style="flex-wrap:wrap;gap:6px">
+      <div style="display:flex;gap:4px;align-items:center;flex:1;min-width:0">
+        <input type="color" class="editor-color-input editor-route-color" value="${r.color || '#aaaaaa'}" oninput="editorData.trip.route[${i}].color=this.value;edSyncRouteColorToDays(${i})">
+        <select class="editor-inline-input editor-flag-select" onchange="editorData.trip.route[${i}].flag=this.value;edSyncRouteFlagToDays(${i});refreshSection('route')">
+          <option value="">${t('ed.selectCountry')}</option>
+          ${currentFlagOptions}
+        </select>
+        <div class="editor-loc-wrap" id="route-city-wrap-${i}" style="flex:1;min-width:0">
+          <div class="editor-loc-input-row">
+            <input class="editor-input editor-loc-query" id="${qId}"
+              value="${escHtml(r.city || '')}" placeholder="${t('ed.cityName')}"
+              oninput="edRenameRouteCityDebounced(${i},this.value)"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();edSearchRouteCity(${i},this.value)}">
+            ${coordBadge}
+            <button class="editor-loc-search-btn" onclick="edSearchRouteCity(${i},document.getElementById('${qId}').value)" title="${t('ed.locSearch')}">🔍</button>
+          </div>
+          <div class="editor-loc-results" id="${rId}"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+        <button class="editor-move-btn" onclick="edMoveRoute(${i},-1)" title="${t('ed.moveUp')}">↑</button>
+        <button class="editor-move-btn" onclick="edMoveRoute(${i},1)" title="${t('ed.moveDown')}">↓</button>
+        <button class="editor-remove-btn" onclick="edRemoveRoute(${i})" title="${t('ed.remove')}">✕</button>
+      </div>
     </div>`;
   }).join('');
 
@@ -509,6 +536,104 @@ function edRenameRouteCity(routeIdx, newName) {
     }
   }
 }
+// Debounced version: rename immediately (in-memory), but defer DOM refreshes
+let _routeCityDebounceTimer = null;
+function edRenameRouteCityDebounced(routeIdx, newName) {
+  edRenameRouteCity(routeIdx, newName);
+  clearTimeout(_routeCityDebounceTimer);
+  _routeCityDebounceTimer = setTimeout(() => {
+    refreshSection('days');
+    refreshSection('trip-info');
+  }, 400);
+}
+
+// ─── Route City Search (Nominatim) ───
+let _routeCitySearchResults = [];
+
+async function edSearchRouteCity(routeIdx, query) {
+  const rId = `route-city-r-${routeIdx}`;
+  const resultsEl = document.getElementById(rId);
+  if (!resultsEl || !query.trim()) return;
+
+  // Direct coordinate input
+  const coordMatch = query.match(/^\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*$/);
+  if (coordMatch) {
+    const lat = parseFloat(coordMatch[1]), lng = parseFloat(coordMatch[2]);
+    edPickRouteCityCoords(routeIdx, lat, lng, query);
+    resultsEl.innerHTML = '';
+    return;
+  }
+
+  resultsEl.innerHTML = `<div class="editor-loc-loading">${t('ed.locSearching')}</div>`;
+
+  try {
+    // Scope search to selected country if flag is set
+    const routeFlag = editorData.trip.route[routeIdx].flag;
+    const isoCode = routeFlag ? (FLAG_TO_ISO[routeFlag] || '') : '';
+    const ccParam = isoCode ? `&countrycodes=${isoCode}` : '';
+    const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(query)}&limit=5&accept-language=en${ccParam}`, {
+      headers: { 'Accept-Language': 'en' }
+    });
+    const data = await resp.json();
+    if (!data.length) {
+      resultsEl.innerHTML = `<div class="editor-loc-empty">${t('ed.locNoResults')}</div>`;
+      return;
+    }
+    _routeCitySearchResults = data.map(r => ({
+      lat: parseFloat(r.lat),
+      lng: parseFloat(r.lon),
+      label: r.display_name,
+      countryCode: (r.address && r.address.country_code) ? r.address.country_code : ''
+    }));
+    resultsEl.innerHTML = _routeCitySearchResults.map((r, i) =>
+      `<div class="editor-loc-result" onclick="edPickRouteCityResult(${routeIdx},${i})">
+        <span class="editor-loc-result-name">${escHtml(r.label.split(',').slice(0, 3).join(','))}</span>
+        <span class="editor-loc-result-coord">${r.lat.toFixed(4)}, ${r.lng.toFixed(4)}</span>
+      </div>`
+    ).join('');
+  } catch {
+    resultsEl.innerHTML = `<div class="editor-loc-empty">${t('ed.locSearchFailed')}</div>`;
+  }
+}
+
+function edPickRouteCityResult(routeIdx, resultIdx) {
+  const r = _routeCitySearchResults[resultIdx];
+  if (!r) return;
+  const route = editorData.trip.route[routeIdx];
+  const cityName = route.city || r.label.split(',')[0].trim();
+
+  // Auto-select country flag if empty and we have a country code from Nominatim
+  if (!route.flag && r.countryCode) {
+    const detectedFlag = ISO_TO_FLAG[r.countryCode.toLowerCase()];
+    if (detectedFlag) {
+      route.flag = detectedFlag;
+      autoAssignRouteColors(editorData.trip.route);
+      edSyncRouteFlagToDays(routeIdx);
+    }
+  }
+
+  edPickRouteCityCoords(routeIdx, r.lat, r.lng, cityName);
+}
+
+function edPickRouteCityCoords(routeIdx, lat, lng, cityName) {
+  const route = editorData.trip.route[routeIdx];
+  const oldName = route.city;
+  route.lat = Math.round(lat * 1e6) / 1e6;
+  route.lng = Math.round(lng * 1e6) / 1e6;
+  if (cityName && cityName !== oldName) {
+    route.city = cityName;
+    if (oldName) {
+      for (const day of (editorData.days || [])) {
+        if (day.city === oldName) day.city = cityName;
+        if (day.parentCity === oldName) day.parentCity = cityName;
+      }
+    }
+  }
+  refreshSection('route');
+  refreshSection('days');
+  refreshSection('trip-info');
+}
+
 function edMoveRoute(i, dir) {
   const arr = editorData.trip.route;
   const j = i + dir;
