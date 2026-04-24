@@ -271,6 +271,7 @@ const TRANSLATIONS = {
   'ui.classic':                'Classic',
   'ui.bento':                  'Bento',
   'ui.minimal':                'Minimal',
+  'ui.actions':                'Actions',
 
   // ─── Placeholders that contain example content ───
   'ph.subtitle':               'e.g. 28 April \u2013 22 May \u00B7 25 days \u00B7 6 cities',
@@ -555,6 +556,7 @@ const TRANSLATIONS_PTBR = {
   'ui.classic':                'Cl\u00E1ssico',
   'ui.bento':                  'Bento',
   'ui.minimal':                'Minimal',
+  'ui.actions':                'A\u00E7\u00F5es',
 
   // ─── Placeholders ───
   'ph.subtitle':               'ex: 28 Abril \u2013 22 Maio \u00B7 25 dias \u00B7 6 cidades',
@@ -723,6 +725,8 @@ function applySettingsLabels() {
   if (lblLang) lblLang.textContent = t('ui.language');
   const lblStyle = document.getElementById('tp-lbl-style');
   if (lblStyle) lblStyle.textContent = t('ui.cardStyle');
+  const lblActions = document.getElementById('tp-lbl-actions');
+  if (lblActions) lblActions.textContent = t('ui.actions');
   // Update theme button text
   document.querySelectorAll('.tp-theme-btn').forEach(b => {
     b.textContent = b.dataset.theme === 'dark' ? t('ui.dark') : t('ui.light');
@@ -732,6 +736,13 @@ function applySettingsLabels() {
     const key = 'ui.' + b.dataset.style;
     b.textContent = t(key);
   });
+  // Update popover action button text
+  const popDocs = document.getElementById('tp-pop-docs');
+  if (popDocs) popDocs.textContent = '\uD83D\uDCCE ' + t('btn.documents');
+  const popEdit = document.getElementById('tp-pop-edit');
+  if (popEdit) popEdit.textContent = '\u270F\uFE0F ' + t('btn.edit');
+  const popChange = document.getElementById('tp-pop-change');
+  if (popChange) popChange.textContent = '\uD83D\uDCCB ' + t('btn.changeTrip');
 }
 
 /**
