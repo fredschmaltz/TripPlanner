@@ -538,16 +538,45 @@
 /* ── Responsive — Mobile ── */
 @media (max-width: 600px) {
   .editor-toolbar {
-    padding: 8px 48px 8px 10px;
-    flex-wrap: wrap;
+    padding: 8px 12px;
     gap: 8px;
+    flex-wrap: nowrap;
+    justify-content: space-between;
   }
-  .editor-toolbar-title { font-size: 0.9rem; }
+  .editor-toolbar-left {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .editor-toolbar-title { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .editor-toolbar-icon { font-size: 1rem; }
-  .editor-toolbar-right { gap: 6px; }
+  .editor-toolbar-right {
+    gap: 6px;
+    flex-shrink: 0;
+    align-items: center;
+  }
   .editor-btn {
     padding: 7px 12px;
     font-size: 0.75rem;
+  }
+
+  /* Settings gear when moved into toolbar */
+  .tp-settings-wrap.in-toolbar {
+    position: static;
+    z-index: auto;
+    display: flex;
+    align-items: center;
+  }
+  .tp-settings-wrap.in-toolbar .tp-settings-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+  .tp-settings-wrap.in-toolbar .tp-settings-popover {
+    position: fixed;
+    top: 48px;
+    right: 8px;
+    left: auto;
   }
   .editor-body {
     padding: 10px 8px;
