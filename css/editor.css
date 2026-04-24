@@ -159,12 +159,13 @@
   height: 36px;
   box-sizing: border-box;
 }
-/* Date & time inputs: tame extra browser chrome padding */
+/* Date & time inputs: strip native chrome so height matches other inputs */
 input[type="date"].editor-input,
 input[type="time"].editor-input {
-  padding-top: 4px;
-  padding-bottom: 4px;
-  line-height: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 7px 10px;
+  line-height: 1.2;
 }
 .editor-input:focus,
 .editor-select:focus,
@@ -619,14 +620,21 @@ input[type="time"].editor-input {
     min-width: 0;
     box-sizing: border-box;
   }
-  /* Date & time: match height of other inputs, reduce native chrome padding */
+  /* Date & time: strip iOS native chrome, force same height as other inputs */
   input[type="date"].editor-input,
   input[type="time"].editor-input {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 38px;
     min-width: 0;
+    padding: 8px 10px;
+    line-height: 1.2;
     overflow: hidden;
-    padding-top: 4px;
-    padding-bottom: 4px;
-    line-height: 1;
+  }
+  /* Time fields: ensure they wrap instead of overlapping on narrow screens */
+  .editor-time-start,
+  .editor-time-end {
+    min-width: 90px;
   }
   /* Icon emoji select: keep compact on mobile */
   .editor-emoji-select {
@@ -769,16 +777,22 @@ input[type="time"].editor-input {
   .editor-city-select-wrap { height: 34px; }
   .editor-city-select-wrap .editor-select { height: 34px; }
 
-  /* Date & time: match other input heights, tame native padding */
+  /* Date & time: strip iOS native chrome, force uniform height */
   input[type="date"].editor-input,
   input[type="time"].editor-input {
+    -webkit-appearance: none;
+    appearance: none;
     height: 34px;
     min-width: 0;
     box-sizing: border-box;
     overflow: hidden;
-    padding-top: 2px;
-    padding-bottom: 2px;
-    line-height: 1;
+    padding: 6px 8px;
+    line-height: 1.2;
+  }
+  /* Time fields: ensure they wrap instead of overlapping */
+  .editor-time-start,
+  .editor-time-end {
+    min-width: 80px;
   }
 
   .editor-label { font-size: 0.6rem; }
