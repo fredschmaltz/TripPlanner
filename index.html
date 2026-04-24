@@ -100,7 +100,26 @@
   </div>
   <header id="trip-header"></header>
   <div class="legend" id="trip-legend"></div>
+  <div class="timeline-controls" id="timeline-controls">
+    <div class="search-bar">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="timeline-search-input" class="search-input" placeholder="Search timeline…" autocomplete="off">
+      <button class="search-clear hidden" id="search-clear-btn" onclick="clearTimelineSearch()" title="Clear">&times;</button>
+    </div>
+    <div class="view-mode-bar">
+      <button class="view-mode-btn active" data-mode="all" onclick="setViewMode('all')">All</button>
+      <button class="view-mode-btn" data-mode="byDay" onclick="setViewMode('byDay')">Day</button>
+      <button class="view-mode-btn" data-mode="byCity" onclick="setViewMode('byCity')">City</button>
+      <button class="view-mode-btn" data-mode="paged" onclick="setViewMode('paged')">Paged</button>
+    </div>
+  </div>
+  <div id="view-page-nav" class="view-page-nav hidden">
+    <button class="view-nav-btn" onclick="viewPrev()">‹</button>
+    <span class="view-page-label" id="view-page-label">1 of 1</span>
+    <button class="view-nav-btn" onclick="viewNext()">›</button>
+  </div>
   <div class="timeline" id="timeline"></div>
+  <div id="timeline-no-results" class="timeline-no-results hidden"></div>
 </div>
 
 <div id="editor-overlay" class="editor-overlay hidden">
