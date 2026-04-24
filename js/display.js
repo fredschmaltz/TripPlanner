@@ -847,6 +847,13 @@ async function toggleDayMap(e, btn, dayIndex) {
   await initDayMap(dayIndex);
 }
 
+// Helper: extract {lat,lng} from a map field (object with lat/lng)
+function getCoords(m) {
+  if (!m) return null;
+  if (typeof m === 'object' && m.lat && m.lng) return { lat: m.lat, lng: m.lng };
+  return null;
+}
+
 async function initDayMap(dayIndex) {
   const containerId = `day-map-${dayIndex}`;
   const container = document.getElementById(containerId);
@@ -858,12 +865,6 @@ async function initDayMap(dayIndex) {
 
   const isTransportType = tp => ['flight','transit','bus','ferry','taxi'].includes(tp);
 
-  function getCoords(m) {
-    if (!m) return null;
-    if (typeof m === 'object' && m.lat && m.lng) return { lat: m.lat, lng: m.lng };
-    return null;
-  }
-
   // Haversine approximate distance in meters
   function distM(a, b) {
     const R = 6371000, toRad = v => v * Math.PI / 180;
@@ -873,6 +874,7 @@ async function initDayMap(dayIndex) {
   }
 
   const MERGE_DIST = 200; // merge pins within 200 m
+  let ptIndex = 0;             // sequential number for each map point
   const allPoints = [];        // raw points (for merging into pins)
   const routeSegments = [[]];  // walking-route segments (break at transports)
   const trajectories = [];     // transport arcs
@@ -884,8 +886,8 @@ async function initDayMap(dayIndex) {
     if (isTransportType(c.type) && (c.mapsFrom || c.mapsTo)) {
       const from = getCoords(c.mapsFrom);
       const to   = getCoords(c.mapsTo);
-      if (from) allPoints.push({ lat: from.lat, lng: from.lng, color, labels: [{ icon: '📍', title: mapsLabel(c.mapsFrom), type: `${meta.label} – ${t('card.departure')}` }] });
-      if (to)   allPoints.push({ lat: to.lat,   lng: to.lng,   color, labels: [{ icon: '🏁', title: mapsLabel(c.mapsTo),   type: `${meta.label} – ${t('card.arrival')}` }] });
+      if (from) { ptIndex++; allPoints.push({ lat: from.lat, lng: from.lng, color, idx: ptIndex, labels: [{ idx: ptIndex, icon: '📍', title: mapsLabel(c.mapsFrom), type: `${meta.label} – ${t('card.departure')}` }] }); }
+      if (to)   { ptIndex++; allPoints.push({ lat: to.lat,   lng: to.lng,   color, idx: ptIndex, labels: [{ idx: ptIndex, icon: '🏁', title: mapsLabel(c.mapsTo),   type: `${meta.label} – ${t('card.arrival')}` }] }); }
       if (from && to) trajectories.push({ from, to, color });
       // Close current walking segment with departure, then start new segment with arrival
       if (from) routeSegments[routeSegments.length - 1].push(L.latLng(from.lat, from.lng));
@@ -894,7 +896,8 @@ async function initDayMap(dayIndex) {
     } else {
       const pt = getCoords(c.maps);
       if (pt) {
-        allPoints.push({ lat: pt.lat, lng: pt.lng, color, labels: [{ icon: c.icon || '📌', title: c.title || mapsLabel(c.maps), type: meta.label }] });
+        ptIndex++;
+        allPoints.push({ lat: pt.lat, lng: pt.lng, color, idx: ptIndex, labels: [{ idx: ptIndex, icon: c.icon || '📌', title: c.title || mapsLabel(c.maps), type: meta.label }] });
         routeSegments[routeSegments.length - 1].push(L.latLng(pt.lat, pt.lng));
       }
     }
@@ -914,7 +917,7 @@ async function initDayMap(dayIndex) {
         }
       }
     } else {
-      merged.push({ lat: p.lat, lng: p.lng, color: p.color, labels: [...p.labels] });
+      merged.push({ lat: p.lat, lng: p.lng, color: p.color, labels: p.labels.map(l => ({...l})) });
     }
   }
 
@@ -927,21 +930,23 @@ async function initDayMap(dayIndex) {
 
   const bounds = L.latLngBounds();
 
-  merged.forEach((m, i) => {
+  merged.forEach((m) => {
     const latlng = L.latLng(m.lat, m.lng);
     bounds.extend(latlng);
 
-    const count = m.labels.length;
-    const pinText = count > 1 ? `${i + 1}<sub>×${count}</sub>` : String(i + 1);
+    const indices = m.labels.map(l => l.idx);
+    const isMulti = indices.length > 1;
+    const pinText = indices.join(', ');
     const markerIcon = L.divIcon({
       className: 'day-map-marker',
-      html: `<div class="map-pin${count > 1 ? ' map-pin-multi' : ''}" style="background:${m.color}">${pinText}</div>`,
-      iconSize: [28, 28],
-      iconAnchor: [14, 14],
+      html: `<div class="map-pin${isMulti ? ' map-pin-multi' : ''}" style="background:${m.color}">${pinText}</div>`,
+      iconSize: isMulti ? [36, 28] : [28, 28],
+      iconAnchor: isMulti ? [18, 14] : [14, 14],
     });
 
     const popupHTML = m.labels.map(l =>
-      `<b>${l.icon} ${l.title}</b><br><span style="font-size:0.8em;color:#666">${l.type}</span>`
+      `<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:${m.color};color:#fff;font-size:0.65rem;font-weight:700;font-family:Consolas,monospace;margin-right:5px;flex-shrink:0;vertical-align:middle">${l.idx}</span>` +
+      `<b>${l.icon} ${l.title}</b><br><span style="font-size:0.8em;color:#666;margin-left:23px">${l.type}</span>`
     ).join('<hr style="margin:4px 0;border:0;border-top:1px solid #ddd">');
 
     L.marker(latlng, { icon: markerIcon }).addTo(map).bindPopup(popupHTML);
@@ -971,25 +976,26 @@ async function initCountrySummaryMap(containerId, countryDays) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
+  // Build route city→coords lookup
+  const routeCoords = {};
+  for (const r of (TRIP_CONFIG.route || [])) {
+    if (r.lat && r.lng && !routeCoords[r.city]) routeCoords[r.city] = { lat: r.lat, lng: r.lng };
+  }
+
   // Collect unique cities with their coordinates
   const citySet = new Map(); // city name → { lat, lng, color }
   for (const day of countryDays) {
     const cityName = day.city;
     if (citySet.has(cityName)) continue;
-    // Try to get coords from any card in this day
-    let lat = null, lng = null;
-    for (const c of (day.cards || [])) {
-      if (c.maps && typeof c.maps === 'object' && c.maps.lat) {
-        lat = c.maps.lat; lng = c.maps.lng; break;
-      }
-      if (c.mapsFrom && typeof c.mapsFrom === 'object' && c.mapsFrom.lat) {
-        lat = c.mapsFrom.lat; lng = c.mapsFrom.lng; break;
-      }
-    }
-    // Fallback: geocode city name
+    // 1. Check route-level coords
+    let lat = routeCoords[cityName]?.lat || null;
+    let lng = routeCoords[cityName]?.lng || null;
+    // 2. Try card coords
     if (!lat || !lng) {
-      const result = await geocodeAddress(cityName);
-      if (result) { lat = result.lat; lng = result.lng; }
+      for (const c of (day.cards || [])) {
+        const pt = getCoords(c.maps) || getCoords(c.mapsFrom) || getCoords(c.mapsTo);
+        if (pt) { lat = pt.lat; lng = pt.lng; break; }
+      }
     }
     if (lat && lng) {
       citySet.set(cityName, { lat, lng, color: day.color || '#aaa' });
@@ -1055,16 +1061,27 @@ async function initTripRouteMap() {
   // Destroy existing
   if (_tripRouteMap) { _tripRouteMap.remove(); _tripRouteMap = null; }
 
-  // Geocode each route stop
+  // Use route-level lat/lng (stored per stop), fall back to scanning DAYS cards
   const stops = [];
   const seen = new Set();
   for (const r of route) {
-    const key = `${r.city}, ${FLAG_TO_COUNTRY[r.flag] || ''}`;
+    const key = `${r.flag}|${r.city}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    const result = await geocodeAddress(key);
-    if (result) {
-      stops.push({ lat: result.lat, lng: result.lng, city: r.city, flag: r.flag, country: FLAG_TO_COUNTRY[r.flag] || '' });
+    let lat = r.lat, lng = r.lng;
+    // Fallback: scan DAYS for a card with coords in this city
+    if (!lat || !lng) {
+      for (const day of DAYS) {
+        if (day.city !== r.city) continue;
+        for (const c of (day.cards || [])) {
+          const pt = getCoords(c.maps) || getCoords(c.mapsFrom) || getCoords(c.mapsTo);
+          if (pt) { lat = pt.lat; lng = pt.lng; break; }
+        }
+        if (lat && lng) break;
+      }
+    }
+    if (lat && lng) {
+      stops.push({ lat, lng, city: r.city, flag: r.flag, country: FLAG_TO_COUNTRY[r.flag] || '' });
     }
   }
 
