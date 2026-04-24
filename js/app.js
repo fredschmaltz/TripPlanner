@@ -103,6 +103,9 @@ function initApp() {
     LOADED_DOCS.clear();
     ALL_REQUIRED_FILES = [];
     JSON_DIR_HANDLE = null;
+    // Hide actions group in settings popover
+    const ag = document.getElementById('tp-actions-group');
+    if (ag) ag.style.display = 'none';
   });
 
   editTripBtn.addEventListener('click', () => openEditor(false));
@@ -346,25 +349,30 @@ function clickDocItem(filepath, isLoaded) {
 
 function updateDocsButtonState() {
   const loadDocsBtn = document.getElementById('load-docs-btn');
+  const popDocsBtn = document.getElementById('tp-pop-docs');
   const total = ALL_REQUIRED_FILES.length;
   if (total === 0) {
     loadDocsBtn.textContent = `\uD83D\uDCCE ${t('docs.noDocs')}`;
     loadDocsBtn.style.borderColor = 'var(--border2)';
     loadDocsBtn.style.color = 'var(--muted)';
+    if (popDocsBtn) { popDocsBtn.textContent = `\uD83D\uDCCE ${t('docs.noDocs')}`; popDocsBtn.style.color = 'var(--muted)'; }
   } else {
     const matched = ALL_REQUIRED_FILES.filter(f => getDocUrl(f)).length;
     if (matched >= total) {
       loadDocsBtn.textContent = `\uD83D\uDCCE ${total} ${t('docs.allLoaded')}`;
       loadDocsBtn.style.borderColor = '#6fcf97';
       loadDocsBtn.style.color = '#6fcf97';
+      if (popDocsBtn) { popDocsBtn.textContent = `\uD83D\uDCCE ${total} ${t('docs.allLoaded')}`; popDocsBtn.style.color = '#6fcf97'; }
     } else if (matched === 0) {
       loadDocsBtn.textContent = `\uD83D\uDCCE ${t('docs.load')} ${total} ${total > 1 ? t('docs.docs') : t('docs.doc')}`;
       loadDocsBtn.style.borderColor = '#e8a85a';
       loadDocsBtn.style.color = '#e8a85a';
+      if (popDocsBtn) { popDocsBtn.textContent = `\uD83D\uDCCE ${t('docs.load')} ${total} ${total > 1 ? t('docs.docs') : t('docs.doc')}`; popDocsBtn.style.color = '#e8a85a'; }
     } else {
       loadDocsBtn.textContent = `\uD83D\uDCCE ${matched}/${total}`;
       loadDocsBtn.style.borderColor = '#e8a85a';
       loadDocsBtn.style.color = '#e8a85a';
+      if (popDocsBtn) { popDocsBtn.textContent = `\uD83D\uDCCE ${matched}/${total}`; popDocsBtn.style.color = '#e8a85a'; }
     }
   }
 }
@@ -462,6 +470,10 @@ function initTrip(data) {
 
   document.getElementById('picker-view').classList.add('hidden');
   document.getElementById('trip-view').classList.remove('hidden');
+
+  // Show actions group in settings popover now that trip is loaded
+  const actionsGroup = document.getElementById('tp-actions-group');
+  if (actionsGroup) actionsGroup.style.display = 'flex';
 
   const loadDocsBtn = document.getElementById('load-docs-btn');
   loadDocsBtn.style.display = ALL_REQUIRED_FILES.length > 0 ? 'flex' : 'none';
