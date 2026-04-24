@@ -260,15 +260,9 @@ header .subtitle {
   cursor: pointer;
 }
 
-/* Top-right action bar */
+/* Top-right action bar — hidden, actions live in settings popover */
 .trip-actions-bar {
-  position: fixed;
-  top: 12px;
-  right: 56px;
-  z-index: 100;
-  display: flex;
-  gap: 8px;
-  align-items: center;
+  display: none !important;
 }
 .trip-action-btn {
   display: flex;
@@ -735,8 +729,7 @@ header .subtitle {
 @media (max-width: 768px) {
   /* Settings & action bar */
   .tp-settings-wrap { top: 10px; right: 10px; }
-  .trip-actions-bar { right: 50px; top: 10px; gap: 6px; }
-  .trip-action-btn { padding: 6px 12px; font-size: 0.75rem; }
+  /* trip-actions-bar hidden globally — no tablet overrides needed */
 
   /* Header */
   header { padding: 48px 16px 32px; }
@@ -762,14 +755,7 @@ header .subtitle {
   .tp-settings-btn { width: 32px; height: 32px; font-size: 0.95rem; }
   .tp-settings-popover { min-width: 180px; padding: 10px 12px; }
 
-  /* ── HIDE action bar on mobile, show in popover instead ── */
-  .trip-actions-bar {
-    display: none !important;
-  }
-  .tp-actions-group {
-    display: flex;
-    flex-direction: column;
-  }
+  /* trip-actions-bar already hidden globally */
 
   /* ── Picker ── */
   .picker-container { padding: 24px 14px; }
@@ -1378,9 +1364,10 @@ header .subtitle {
 [data-theme="light"] .exp-files-label { color: #2a6868; }
 [data-theme="light"] .file-open-btn { color: #2a6868; }
 
-/* ── Popover action items (mobile only) ── */
+/* ── Popover action items (shown after trip loads via JS) ── */
 .tp-actions-group {
   display: none;
+  flex-direction: column;
 }
 .tp-actions-list {
   display: flex;
