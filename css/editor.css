@@ -648,6 +648,16 @@ input[type="time"].editor-input {
     gap: 6px;
     padding: 8px;
   }
+  .editor-route-stop {
+    flex-wrap: wrap;
+    padding: 8px;
+    gap: 6px;
+  }
+  /* Mobile portrait: color+country on first line, city+search+actions on second */
+  .editor-route-stop .editor-route-color { order: 1; }
+  .editor-route-stop .editor-flag-select { order: 2; flex: 1 1 0; min-width: 0; font-size: 0.82rem; }
+  .editor-route-stop .editor-loc-wrap { order: 4; flex: 1 1 100%; }
+  .editor-route-stop .editor-route-actions-inline { order: 3; gap: 2px; }
   .editor-flag-select {
     min-width: 0;
     flex: 1 1 100%;
@@ -856,6 +866,20 @@ input[type="time"].editor-input {
 .editor-route-color {
   width: 32px;
   min-width: 32px;
+  flex-shrink: 0;
+}
+
+/* ── Route stop layout ── */
+/* Desktop: single row (color | country | city+search | actions) */
+.editor-route-stop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.editor-route-actions-inline {
+  display: flex;
+  gap: 4px;
+  align-items: center;
   flex-shrink: 0;
 }
 
