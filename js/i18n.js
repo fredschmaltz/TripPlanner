@@ -310,6 +310,33 @@ const TRANSLATIONS = {
   'ph.toEx':                   'Osaka (KIX)',
   'ph.nara':                   'Nara, Nikko...',
 
+  // ─── Search / Filter ───
+  'search.placeholder':          'Search timeline…',
+  'search.noResults':            'No matching entries',
+  'search.clear':                'Clear search',
+
+  // ─── View Modes ───
+  'view.all':                    'All',
+  'view.byDay':                  'By Day',
+  'view.byCity':                 'By City',
+  'view.paged':                  'Paged',
+  'view.prev':                   'Previous',
+  'view.next':                   'Next',
+  'view.pageOf':                 'of',
+
+  // ─── Save dialog ───
+  'save.overrideTitle':          'Save Trip',
+  'save.overrideMsg':            'Overwrite existing config file?',
+  'save.selectFolder':           'Select a folder to save your trip',
+  'save.yes':                    'Yes',
+  'save.no':                     'No',
+
+  // ─── Card close ───
+  'card.close':                  'Close',
+
+  // ─── Country change prompt ───
+  'ed.countryChangePrompt':      'This city belongs to {country}. Change the country?',
+
   // ─── Day / Month names (short) ───
   'day.sun': 'Sun', 'day.mon': 'Mon', 'day.tue': 'Tue', 'day.wed': 'Wed',
   'day.thu': 'Thu', 'day.fri': 'Fri', 'day.sat': 'Sat',
@@ -624,6 +651,33 @@ const TRANSLATIONS_PTBR = {
   'ph.toEx':                   'Osaka (KIX)',
   'ph.nara':                   'Nara, Nikko...',
 
+  // ─── Search / Filter ───
+  'search.placeholder':          'Buscar na linha do tempo\u2026',
+  'search.noResults':            'Nenhuma entrada encontrada',
+  'search.clear':                'Limpar busca',
+
+  // ─── View Modes ───
+  'view.all':                    'Tudo',
+  'view.byDay':                  'Por Dia',
+  'view.byCity':                 'Por Cidade',
+  'view.paged':                  'P\u00E1ginas',
+  'view.prev':                   'Anterior',
+  'view.next':                   'Pr\u00F3ximo',
+  'view.pageOf':                 'de',
+
+  // ─── Save dialog ───
+  'save.overrideTitle':          'Salvar Viagem',
+  'save.overrideMsg':            'Sobrescrever arquivo de configura\u00E7\u00E3o existente?',
+  'save.selectFolder':           'Selecione uma pasta para salvar sua viagem',
+  'save.yes':                    'Sim',
+  'save.no':                     'N\u00E3o',
+
+  // ─── Card close ───
+  'card.close':                  'Fechar',
+
+  // ─── Country change prompt ───
+  'ed.countryChangePrompt':      'Esta cidade pertence a {country}. Alterar o pa\u00EDs?',
+
   // ─── Day / Month names (short) ───
   'day.sun': 'Dom', 'day.mon': 'Seg', 'day.tue': 'Ter', 'day.wed': 'Qua',
   'day.thu': 'Qui', 'day.fri': 'Sex', 'day.sat': 'S\u00E1b',
@@ -666,6 +720,7 @@ function setLanguage(lang) {
   if (TRIP_CONFIG) {
     applyPickerTranslations();
     applyTripViewTranslations();
+    applyTimelineControlsTranslations();
     renderHeader();
     renderLegend();
     renderTimeline();
@@ -806,6 +861,22 @@ function applySettingsLabels() {
   if (popEdit) popEdit.textContent = '\u270F\uFE0F ' + t('btn.edit');
   const popChange = document.getElementById('tp-pop-change');
   if (popChange) popChange.textContent = '\uD83D\uDCCB ' + t('btn.changeTrip');
+}
+
+/**
+ * Update timeline controls (search + view mode) translations.
+ */
+function applyTimelineControlsTranslations() {
+  const searchInput = document.getElementById('timeline-search-input');
+  if (searchInput) searchInput.placeholder = t('search.placeholder');
+  const noResults = document.getElementById('timeline-no-results');
+  if (noResults) noResults.textContent = t('search.noResults');
+  // View mode buttons
+  const modeKeys = { all: 'view.all', byDay: 'view.byDay', byCity: 'view.byCity', paged: 'view.paged' };
+  document.querySelectorAll('.view-mode-btn').forEach(b => {
+    const key = modeKeys[b.dataset.mode];
+    if (key) b.textContent = t(key);
+  });
 }
 
 /**
