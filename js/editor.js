@@ -207,6 +207,11 @@ function openEditor(fromScratch) {
 
   const overlay = document.getElementById('editor-overlay');
   overlay.classList.remove('hidden');
+  document.body.classList.add('editor-active');
+
+  // On mobile, move settings gear into editor toolbar
+  moveSettingsToToolbar();
+
   renderEditorForm();
 
   // Capture snapshot for dirty detection
@@ -219,6 +224,11 @@ function closeEditor() {
     if (!confirm(t('ed.discardChanges'))) return;
   }
   document.getElementById('editor-overlay').classList.add('hidden');
+  document.body.classList.remove('editor-active');
+
+  // Restore settings gear to original position
+  restoreSettingsFromToolbar();
+
   editorData = null;
   pendingFiles = [];
   editorSnapshot = '';
