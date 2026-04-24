@@ -1839,3 +1839,245 @@ header .subtitle {
   .exp-header { gap: 6px; }
   .food-panel-inner { grid-template-columns: 1fr 1fr; }
 }
+
+/* ══════════════════════════════════════════
+   VISITED / DONE CARDS
+══════════════════════════════════════════ */
+.card-visited {
+  opacity: 0.55;
+  border-left-color: #6fcf97 !important;
+}
+.card-visited:hover { opacity: 0.8; }
+.card-visited .card-collapsed::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 1px;
+  background: var(--dim);
+  opacity: 0.25;
+  pointer-events: none;
+}
+.card-visited-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #6fcf97;
+  color: #000;
+  font-size: 0.6rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.card-visited-btn {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.card-visited-btn:hover {
+  border-color: #6fcf97;
+  color: #6fcf97;
+  background: #6fcf9712;
+}
+.card-visited-btn.active {
+  border-color: #6fcf97;
+  color: #6fcf97;
+  background: #6fcf9718;
+}
+.exp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* ══════════════════════════════════════════
+   PAST DAY GRAYING + HIGHLIGHTS
+══════════════════════════════════════════ */
+.day-past {
+  opacity: 0.5;
+  filter: saturate(0.4);
+}
+.day-past:hover {
+  opacity: 0.75;
+  filter: saturate(0.7);
+}
+.day-past-unvisited {
+  opacity: 0.6;
+}
+.day-past-all-unvisited {
+  opacity: 0.7;
+  filter: saturate(0.3);
+  border-color: #e8a85a40 !important;
+}
+.day-past-all-unvisited .day-header {
+  background: #e8a85a08;
+}
+.card-past-unvisited {
+  border-left-color: #e8a85a !important;
+  box-shadow: inset 0 0 0 1px #e8a85a25;
+}
+
+/* ══════════════════════════════════════════
+   SETTINGS TOGGLES
+══════════════════════════════════════════ */
+.tp-toggle-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text);
+  cursor: pointer;
+  padding: 4px 0;
+}
+.tp-toggle-check input[type="checkbox"] {
+  width: 16px; height: 16px;
+  accent-color: #6fcf97;
+  cursor: pointer;
+}
+
+/* ══════════════════════════════════════════
+   LEAFLET MAP CONTAINERS
+══════════════════════════════════════════ */
+.day-map-panel {
+  display: none;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+}
+.day-map-panel.open {
+  display: block;
+}
+.day-map-container {
+  width: 100%;
+  height: 260px;
+  background: var(--surface2);
+}
+.day-map-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.day-map-btn:hover {
+  border-color: #4a9eff;
+  color: #4a9eff;
+  background: #4a9eff10;
+}
+.day-map-btn.active {
+  border-color: #4a9eff;
+  color: #4a9eff;
+  background: #4a9eff18;
+}
+
+/* Country summary map */
+.country-summary-map {
+  width: 100%;
+  height: 200px;
+  border-radius: 10px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+/* Leaflet tile contrast in dark mode */
+[data-theme="dark"] .leaflet-tile-pane { filter: brightness(0.75) contrast(1.15) saturate(0.8); }
+[data-theme="dark"] .leaflet-container { background: var(--bg); }
+
+/* Map marker pins */
+.day-map-marker { background: none !important; border: none !important; }
+.map-pin {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: 'Consolas', monospace;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  border: 2px solid rgba(255,255,255,0.6);
+}
+
+/* ══════════════════════════════════════════
+   HEADER MAP BUTTON & TRIP ROUTE OVERLAY
+══════════════════════════════════════════ */
+.header-map-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 2px 8px;
+  margin-left: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: all var(--transition);
+  color: var(--muted);
+}
+.header-map-btn:hover {
+  border-color: #4a9eff;
+  background: #4a9eff15;
+  transform: scale(1.08);
+}
+.trip-route-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  transition: opacity 0.25s ease;
+}
+.trip-route-overlay.hidden {
+  display: none;
+}
+.trip-route-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.trip-route-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.trip-route-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+.trip-route-close:hover {
+  color: var(--text);
+}
+.trip-route-map-container {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
