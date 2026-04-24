@@ -244,6 +244,14 @@ const TAG_TYPES = [
 
 // ─── Utility functions ───
 
+function getDayNames() {
+  return [t('day.sun'), t('day.mon'), t('day.tue'), t('day.wed'), t('day.thu'), t('day.fri'), t('day.sat')];
+}
+function getMonthNames() {
+  return [t('month.jan'), t('month.feb'), t('month.mar'), t('month.apr'), t('month.may'), t('month.jun'),
+          t('month.jul'), t('month.aug'), t('month.sep'), t('month.oct'), t('month.nov'), t('month.dec')];
+}
+
 function parseTags(tagStr) {
   if (!tagStr) return [];
   const items = Array.isArray(tagStr) ? tagStr : tagStr.split(',');
@@ -257,8 +265,16 @@ function renderTag(t) {
   return `<span class="tag tag-${t.cls || 'price'}">${t.label}</span>`;
 }
 
-function openMaps(query) {
-  const enc = encodeURIComponent(query);
+function openMaps(latOrQuery, lng) {
+  let target;
+  if (typeof latOrQuery === 'number' && typeof lng === 'number') {
+    target = `${latOrQuery},${lng}`;
+  } else if (typeof latOrQuery === 'object' && latOrQuery && latOrQuery.lat) {
+    target = `${latOrQuery.lat},${latOrQuery.lng}`;
+  } else {
+    target = String(latOrQuery);
+  }
+  const enc = encodeURIComponent(target);
   const isApple = /iPad|iPhone|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
   window.open(isApple
     ? 'maps://maps.apple.com/?daddr=' + enc
@@ -408,4 +424,96 @@ function escHtml(str) {
   const div = document.createElement('div');
   div.textContent = str || '';
   return div.innerHTML;
+}
+
+// ─── Date parsing utility ───
+// Parses "Wed 29 Apr" + TRIP_CONFIG.year → Date object
+function parseDayDate(dateStr) {
+  if (!dateStr) return null;
+  const m = dateStr.match(/^\w+\s+(\d+)\s+(\w+)$/);
+  if (!m) return null;
+  const day = parseInt(m[1]);
+  const monthNames = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  // Try English month names first (dates are stored in English)
+  let monIdx = monthNames.findIndex(mn => mn === m[2].toLowerCase());
+  if (monIdx < 0) {
+    // Try localized month names
+    const localized = typeof getMonthNames === 'function' ? getMonthNames() : [];
+    monIdx = localized.findIndex(mn => mn.toLowerCase() === m[2].toLowerCase());
+  }
+  if (monIdx < 0) return null;
+  const year = (typeof TRIP_CONFIG !== 'undefined' && TRIP_CONFIG && TRIP_CONFIG.year)
+    ? parseInt(TRIP_CONFIG.year) : new Date().getFullYear();
+  return new Date(year, monIdx, day);
+}
+
+function isDayInPast(dateStr) {
+  const d = parseDayDate(dateStr);
+  if (!d) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return d < today;
+}
+
+// ─── Geocoding service (Nominatim) with rate limiting ───
+const _geocodeCache = {};
+const _geocodeQueue = [];
+let _geocodeBusy = false;
+
+async function geocodeAddress(query) {
+  if (!query) return null;
+  const key = query.trim().toLowerCase();
+  if (_geocodeCache[key]) return _geocodeCache[key];
+  return new Promise((resolve) => {
+    _geocodeQueue.push({ key, query: query.trim(), resolve });
+    _processGeocodeQueue();
+  });
+}
+
+async function _processGeocodeQueue() {
+  if (_geocodeBusy || _geocodeQueue.length === 0) return;
+  _geocodeBusy = true;
+  const { key, query, resolve } = _geocodeQueue.shift();
+  if (_geocodeCache[key]) { resolve(_geocodeCache[key]); _geocodeBusy = false; _processGeocodeQueue(); return; }
+  try {
+    const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`, {
+      headers: { 'Accept-Language': 'en' }
+    });
+    const data = await resp.json();
+    if (data && data.length > 0) {
+      const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      _geocodeCache[key] = result;
+      resolve(result);
+    } else {
+      _geocodeCache[key] = null;
+      resolve(null);
+    }
+  } catch (e) {
+    console.warn('Geocode failed for', query, e);
+    resolve(null);
+  }
+  // Rate limit: 1 request per second (Nominatim policy)
+  setTimeout(() => { _geocodeBusy = false; _processGeocodeQueue(); }, 1100);
+}
+
+// ─── Auto-save helper: write a field back to JSON ───
+async function autoSaveToJSON(mutator) {
+  if (typeof JSON_DIR_HANDLE === 'undefined' || !JSON_DIR_HANDLE) return;
+  try {
+    let jsonFile = null;
+    for await (const entry of JSON_DIR_HANDLE.values()) {
+      if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.json')) {
+        const name = entry.name.toLowerCase();
+        if (!jsonFile || name.includes('trip') || name.includes('config')) jsonFile = entry;
+      }
+    }
+    if (!jsonFile) return;
+    const file = await jsonFile.getFile();
+    const data = JSON.parse(await file.text());
+    mutator(data);
+    const fh = await JSON_DIR_HANDLE.getFileHandle(jsonFile.name, { create: false });
+    const writable = await fh.createWritable();
+    await writable.write(JSON.stringify(data, null, 2));
+    await writable.close();
+  } catch (e) { /* silent */ }
 }
