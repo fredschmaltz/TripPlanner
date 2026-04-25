@@ -27,28 +27,28 @@ const TYPE_META = {
 // ─── All card types grouped for the editor dropdown ───
 const CARD_TYPES = [
   { group: 'Transport',      items: [
-    { value: 'flight',  label: 'Flight',       icon: '✈️' },
-    { value: 'transit', label: 'Train',        icon: '🚄' },
-    { value: 'bus',     label: 'Bus',          icon: '🚌' },
-    { value: 'ferry',   label: 'Ferry',        icon: '⛴️' },
-    { value: 'taxi',    label: 'Taxi / Car',   icon: '🚕' },
+    { value: 'flight',  label: 'Flight',       icon: 'plane' },
+    { value: 'transit', label: 'Train',        icon: 'train' },
+    { value: 'bus',     label: 'Bus',          icon: 'bus' },
+    { value: 'ferry',   label: 'Ferry',        icon: 'ship' },
+    { value: 'taxi',    label: 'Taxi / Car',   icon: 'car' },
   ]},
   { group: 'Accommodation', items: [
-    { value: 'stay',     label: 'Hotel',       icon: '🏨' },
-    { value: 'checkout', label: 'Check-out',   icon: '🔑' },
+    { value: 'stay',     label: 'Hotel',       icon: 'bed' },
+    { value: 'checkout', label: 'Check-out',   icon: 'key' },
   ]},
   { group: 'Attraction',    items: [
-    { value: 'temple',    label: 'Temple / Shrine',   icon: '⛩️' },
-    { value: 'museum',    label: 'Museum',             icon: '🏛️' },
-    { value: 'monument',  label: 'Monument',           icon: '🏯' },
-    { value: 'park',      label: 'Park / Garden',      icon: '🌳' },
-    { value: 'market',    label: 'Market',             icon: '🛍️' },
-    { value: 'viewpoint', label: 'Viewpoint',          icon: '🗼' },
-    { value: 'aquarium',  label: 'Aquarium',           icon: '🐋' },
-    { value: 'zoo',       label: 'Zoo',                icon: '🐼' },
-    { value: 'street',    label: 'Street / District',  icon: '🏘️' },
-    { value: 'nightlife', label: 'Nightlife / Dining', icon: '🍻' },
-    { value: 'activity',  label: 'Activity',           icon: '🎯' },
+    { value: 'temple',    label: 'Temple / Shrine',   icon: 'torii' },
+    { value: 'museum',    label: 'Museum',             icon: 'columns' },
+    { value: 'monument',  label: 'Monument',           icon: 'castle' },
+    { value: 'park',      label: 'Park / Garden',      icon: 'tree' },
+    { value: 'market',    label: 'Market',             icon: 'shopping-bag' },
+    { value: 'viewpoint', label: 'Viewpoint',          icon: 'tower' },
+    { value: 'aquarium',  label: 'Aquarium',           icon: 'fish' },
+    { value: 'zoo',       label: 'Zoo',                icon: 'paw' },
+    { value: 'street',    label: 'Street / District',  icon: 'buildings' },
+    { value: 'nightlife', label: 'Nightlife / Dining', icon: 'wine' },
+    { value: 'activity',  label: 'Activity',           icon: 'target' },
   ]},
 ];
 
@@ -67,6 +67,8 @@ function getCardTypesWithCustom() {
 }
 
 // ─── Emoji palettes by category ───
+// Legacy palettes kept for backward-compatibility with __custom__ path.
+// Default selections now use SVG_PALETTES / FOOD_ICONS (icons.js).
 const EMOJI_PALETTES = {
   food: [
     '🍣','🍱','🍜','🍝','🍛','🍲','🍤','🍥','🥟','🍙','🍘','🍚','🥗','🥘','🍖',
@@ -101,140 +103,127 @@ const EMOJI_PALETTES = {
 
 // ─── Stay sub-types (for icon hints) ───
 const STAY_SUBTYPES = [
-  { value: 'hotel',     label: 'Hotel',     icon: '🏨' },
-  { value: 'apartment', label: 'Apartment', icon: '🏢' },
-  { value: 'hostel',    label: 'Hostel',    icon: '🛏️' },
-  { value: 'airbnb',    label: 'Airbnb',    icon: '🏠' },
-  { value: 'camping',   label: 'Camping',   icon: '⛺' },
-  { value: 'resort',    label: 'Resort',    icon: '🏖️' },
-  { value: 'guesthouse', label: 'Guesthouse', icon: '🏡' },
+  { value: 'hotel',     label: 'Hotel',     icon: 'bed' },
+  { value: 'apartment', label: 'Apartment', icon: 'skyline' },
+  { value: 'hostel',    label: 'Hostel',    icon: 'bed' },
+  { value: 'airbnb',    label: 'Airbnb',    icon: 'buildings' },
+  { value: 'camping',   label: 'Camping',   icon: 'tree' },
+  { value: 'resort',    label: 'Resort',    icon: 'waves' },
+  { value: 'guesthouse', label: 'Guesthouse', icon: 'buildings' },
 ];
 
-// ─── Country flag list ───
+// ─── Country flag list (ISO 3166-1 alpha-2 codes) ───
 const COUNTRY_FLAGS = [
-  { flag: '🇦🇫', name: 'Afghanistan' }, { flag: '🇦🇱', name: 'Albania' }, { flag: '🇩🇿', name: 'Algeria' },
-  { flag: '🇦🇷', name: 'Argentina' }, { flag: '🇦🇺', name: 'Australia' }, { flag: '🇦🇹', name: 'Austria' },
-  { flag: '🇧🇪', name: 'Belgium' }, { flag: '🇧🇷', name: 'Brazil' }, { flag: '🇧🇬', name: 'Bulgaria' },
-  { flag: '🇰🇭', name: 'Cambodia' }, { flag: '🇨🇦', name: 'Canada' }, { flag: '🇨🇱', name: 'Chile' },
-  { flag: '🇨🇳', name: 'China' }, { flag: '🇨🇴', name: 'Colombia' }, { flag: '🇭🇷', name: 'Croatia' },
-  { flag: '🇨🇺', name: 'Cuba' }, { flag: '🇨🇿', name: 'Czechia' }, { flag: '🇩🇰', name: 'Denmark' },
-  { flag: '🇪🇬', name: 'Egypt' }, { flag: '🇪🇪', name: 'Estonia' }, { flag: '🇫🇮', name: 'Finland' },
-  { flag: '🇫🇷', name: 'France' }, { flag: '🇩🇪', name: 'Germany' }, { flag: '🇬🇷', name: 'Greece' },
-  { flag: '🇭🇰', name: 'Hong Kong' }, { flag: '🇭🇺', name: 'Hungary' }, { flag: '🇮🇸', name: 'Iceland' },
-  { flag: '🇮🇳', name: 'India' }, { flag: '🇮🇩', name: 'Indonesia' }, { flag: '🇮🇪', name: 'Ireland' },
-  { flag: '🇮🇱', name: 'Israel' }, { flag: '🇮🇹', name: 'Italy' }, { flag: '🇯🇵', name: 'Japan' },
-  { flag: '🇯🇴', name: 'Jordan' }, { flag: '🇰🇪', name: 'Kenya' }, { flag: '🇰🇷', name: 'South Korea' },
-  { flag: '🇱🇻', name: 'Latvia' }, { flag: '🇱🇹', name: 'Lithuania' }, { flag: '🇲🇾', name: 'Malaysia' },
-  { flag: '🇲🇽', name: 'Mexico' }, { flag: '🇲🇦', name: 'Morocco' }, { flag: '🇲🇲', name: 'Myanmar' },
-  { flag: '🇳🇱', name: 'Netherlands' }, { flag: '🇳🇿', name: 'New Zealand' }, { flag: '🇳🇬', name: 'Nigeria' },
-  { flag: '🇳🇴', name: 'Norway' }, { flag: '🇵🇰', name: 'Pakistan' }, { flag: '🇵🇪', name: 'Peru' },
-  { flag: '🇵🇭', name: 'Philippines' }, { flag: '🇵🇱', name: 'Poland' }, { flag: '🇵🇹', name: 'Portugal' },
-  { flag: '🇷🇴', name: 'Romania' }, { flag: '🇷🇺', name: 'Russia' }, { flag: '🇸🇦', name: 'Saudi Arabia' },
-  { flag: '🇸🇬', name: 'Singapore' }, { flag: '🇸🇰', name: 'Slovakia' }, { flag: '🇸🇮', name: 'Slovenia' },
-  { flag: '🇿🇦', name: 'South Africa' }, { flag: '🇪🇸', name: 'Spain' }, { flag: '🇱🇰', name: 'Sri Lanka' },
-  { flag: '🇸🇪', name: 'Sweden' }, { flag: '🇨🇭', name: 'Switzerland' }, { flag: '🇹🇼', name: 'Taiwan' },
-  { flag: '🇹🇭', name: 'Thailand' }, { flag: '🇹🇷', name: 'Turkey' }, { flag: '🇺🇦', name: 'Ukraine' },
-  { flag: '🇦🇪', name: 'UAE' }, { flag: '🇬🇧', name: 'United Kingdom' }, { flag: '🇺🇸', name: 'United States' },
-  { flag: '🇻🇳', name: 'Vietnam' },
+  { flag: 'af', name: 'Afghanistan' }, { flag: 'al', name: 'Albania' }, { flag: 'dz', name: 'Algeria' },
+  { flag: 'ar', name: 'Argentina' }, { flag: 'au', name: 'Australia' }, { flag: 'at', name: 'Austria' },
+  { flag: 'be', name: 'Belgium' }, { flag: 'br', name: 'Brazil' }, { flag: 'bg', name: 'Bulgaria' },
+  { flag: 'kh', name: 'Cambodia' }, { flag: 'ca', name: 'Canada' }, { flag: 'cl', name: 'Chile' },
+  { flag: 'cn', name: 'China' }, { flag: 'co', name: 'Colombia' }, { flag: 'hr', name: 'Croatia' },
+  { flag: 'cu', name: 'Cuba' }, { flag: 'cz', name: 'Czechia' }, { flag: 'dk', name: 'Denmark' },
+  { flag: 'eg', name: 'Egypt' }, { flag: 'ee', name: 'Estonia' }, { flag: 'fi', name: 'Finland' },
+  { flag: 'fr', name: 'France' }, { flag: 'de', name: 'Germany' }, { flag: 'gr', name: 'Greece' },
+  { flag: 'hk', name: 'Hong Kong' }, { flag: 'hu', name: 'Hungary' }, { flag: 'is', name: 'Iceland' },
+  { flag: 'in', name: 'India' }, { flag: 'id', name: 'Indonesia' }, { flag: 'ie', name: 'Ireland' },
+  { flag: 'il', name: 'Israel' }, { flag: 'it', name: 'Italy' }, { flag: 'jp', name: 'Japan' },
+  { flag: 'jo', name: 'Jordan' }, { flag: 'ke', name: 'Kenya' }, { flag: 'kr', name: 'South Korea' },
+  { flag: 'lv', name: 'Latvia' }, { flag: 'lt', name: 'Lithuania' }, { flag: 'my', name: 'Malaysia' },
+  { flag: 'mx', name: 'Mexico' }, { flag: 'ma', name: 'Morocco' }, { flag: 'mm', name: 'Myanmar' },
+  { flag: 'nl', name: 'Netherlands' }, { flag: 'nz', name: 'New Zealand' }, { flag: 'ng', name: 'Nigeria' },
+  { flag: 'no', name: 'Norway' }, { flag: 'pk', name: 'Pakistan' }, { flag: 'pe', name: 'Peru' },
+  { flag: 'ph', name: 'Philippines' }, { flag: 'pl', name: 'Poland' }, { flag: 'pt', name: 'Portugal' },
+  { flag: 'ro', name: 'Romania' }, { flag: 'ru', name: 'Russia' }, { flag: 'sa', name: 'Saudi Arabia' },
+  { flag: 'sg', name: 'Singapore' }, { flag: 'sk', name: 'Slovakia' }, { flag: 'si', name: 'Slovenia' },
+  { flag: 'za', name: 'South Africa' }, { flag: 'es', name: 'Spain' }, { flag: 'lk', name: 'Sri Lanka' },
+  { flag: 'se', name: 'Sweden' }, { flag: 'ch', name: 'Switzerland' }, { flag: 'tw', name: 'Taiwan' },
+  { flag: 'th', name: 'Thailand' }, { flag: 'tr', name: 'Turkey' }, { flag: 'ua', name: 'Ukraine' },
+  { flag: 'ae', name: 'UAE' }, { flag: 'gb', name: 'United Kingdom' }, { flag: 'us', name: 'United States' },
+  { flag: 'vn', name: 'Vietnam' },
 ];
 
-// Map flag emoji to country name
+// Map ISO code to country name (flag field IS the ISO code now)
 const FLAG_TO_COUNTRY = {};
 COUNTRY_FLAGS.forEach(c => { FLAG_TO_COUNTRY[c.flag] = c.name; });
 
-// Map flag emoji to ISO 3166-1 alpha-2 country code (for Nominatim countrycodes param)
-const FLAG_TO_ISO = {
-  '🇦🇫':'af','🇦🇱':'al','🇩🇿':'dz','🇦🇷':'ar','🇦🇺':'au','🇦🇹':'at',
-  '🇧🇪':'be','🇧🇷':'br','🇧🇬':'bg','🇰🇭':'kh','🇨🇦':'ca','🇨🇱':'cl',
-  '🇨🇳':'cn','🇨🇴':'co','🇭🇷':'hr','🇨🇺':'cu','🇨🇿':'cz','🇩🇰':'dk',
-  '🇪🇬':'eg','🇪🇪':'ee','🇫🇮':'fi','🇫🇷':'fr','🇩🇪':'de','🇬🇷':'gr',
-  '🇭🇰':'hk','🇭🇺':'hu','🇮🇸':'is','🇮🇳':'in','🇮🇩':'id','🇮🇪':'ie',
-  '🇮🇱':'il','🇮🇹':'it','🇯🇵':'jp','🇯🇴':'jo','🇰🇪':'ke','🇰🇷':'kr',
-  '🇱🇻':'lv','🇱🇹':'lt','🇲🇾':'my','🇲🇽':'mx','🇲🇦':'ma','🇲🇲':'mm',
-  '🇳🇱':'nl','🇳🇿':'nz','🇳🇬':'ng','🇳🇴':'no','🇵🇰':'pk','🇵🇪':'pe',
-  '🇵🇭':'ph','🇵🇱':'pl','🇵🇹':'pt','🇷🇴':'ro','🇷🇺':'ru','🇸🇦':'sa',
-  '🇸🇬':'sg','🇸🇰':'sk','🇸🇮':'si','🇿🇦':'za','🇪🇸':'es','🇱🇰':'lk',
-  '🇸🇪':'se','🇨🇭':'ch','🇹🇼':'tw','🇹🇭':'th','🇹🇷':'tr','🇺🇦':'ua',
-  '🇦🇪':'ae','🇬🇧':'gb','🇺🇸':'us','🇻🇳':'vn',
-};
-// Reverse: ISO code → flag
+// FLAG_TO_ISO: identity mapping (flag = ISO code). Kept for API calls.
+const FLAG_TO_ISO = {};
+COUNTRY_FLAGS.forEach(c => { FLAG_TO_ISO[c.flag] = c.flag; });
+// Reverse: ISO code → flag (identity)
 const ISO_TO_FLAG = {};
-for (const [flag, iso] of Object.entries(FLAG_TO_ISO)) ISO_TO_FLAG[iso] = flag;
+COUNTRY_FLAGS.forEach(c => { ISO_TO_FLAG[c.flag] = c.flag; });
 
-// Map country flag to color palette (primary, secondary, tertiary)
-// Ensures no color collisions between different countries
+// Map country ISO code to color palette (primary, secondary, tertiary)
 const COUNTRY_FLAG_PALETTES = {
-  '🇦🇫': ['#ce1126', '#008000', '#000000'], // Red, Green, Black
-  '🇦🇱': ['#002395', '#e60000', '#ffffff'], // Blue, Red, White
-  '🇩🇿': ['#007a5e', '#ffffff', '#ff0000'], // Green, White, Red
-  '🇦🇷': ['#75aadb', '#ffffff', '#ffcc00'], // Light Blue, White, Gold
-  '🇦🇺': ['#00008b', '#ffcd00', '#008000'], // Dark Blue, Gold, Green
-  '🇦🇹': ['#ed2939', '#ffffff', '#000000'], // Red, White, Black
-  '🇧🇪': ['#000000', '#ffcd00', '#ff0000'], // Black, Gold, Red
-  '🇧🇷': ['#009c3b', '#ffcd00', '#2b8cc4'], // Green, Gold, Blue
-  '🇧🇬': ['#ffffff', '#00966e', '#d62612'], // White, Green, Red
-  '🇰🇭': ['#0052cc', '#ff0000', '#ffcd00'], // Blue, Red, Gold
-  '🇨🇦': ['#ff0000', '#ffffff', '#ff6b6b'], // Red, White, Light Red
-  '🇨🇱': ['#0039a6', '#ffffff', '#ff0000'], // Blue, White, Red
-  '🇨🇳': ['#de2910', '#ffcd00', '#000000'], // Red, Gold, Black
-  '🇨🇴': ['#ffcd00', '#0066cc', '#ff0000'], // Gold, Blue, Red
-  '🇭🇷': ['#171796', '#ffffff', '#f00000'], // Blue, White, Red
-  '🇨🇺': ['#002a8f', '#ffffff', '#ff0000'], // Blue, White, Red
-  '🇨🇿': ['#ffffff', '#ff0000', '#11006e'], // White, Red, Blue
-  '🇩🇰': ['#c8102e', '#ffffff', '#000000'], // Red, White, Black
-  '🇪🇬': ['#ce1126', '#ffffff', '#000000'], // Red, White, Black
-  '🇪🇪': ['#4891d9', '#000000', '#ffffff'], // Light Blue, Black, White
-  '🇫🇮': ['#003580', '#ffffff', '#ffcd00'], // Blue, White, Gold
-  '🇫🇷': ['#002395', '#ffffff', '#ff0000'], // Blue, White, Red
-  '🇩🇪': ['#000000', '#ff0000', '#ffcd00'], // Black, Red, Gold
-  '🇬🇷': ['#0d47a1', '#ffffff', '#1976d2'], // Dark Blue, White, Light Blue
-  '🇭🇰': ['#de2910', '#ffffff', '#000000'], // Red, White, Black
-  '🇭🇺': ['#004b87', '#ffffff', '#00aa00'], // Blue, White, Green
-  '🇮🇸': ['#0052cc', '#ffffff', '#ff0000'], // Blue, White, Red
-  '🇮🇳': ['#ff9933', '#ffffff', '#138808'], // Orange, White, Green
-  '🇮🇩': ['#ff0000', '#ffffff', '#000000'], // Red, White, Black
-  '🇮🇪': ['#009543', '#ffffff', '#ff9e1b'], // Green, White, Orange
-  '🇮🇱': ['#0038b8', '#ffffff', '#00aaff'], // Blue, White, Light Blue
-  '🇮🇹': ['#009246', '#ffffff', '#ff0000'], // Green, White, Red
-  '🇯🇵': ['#bc002d', '#ffffff', '#ffcd00'], // Red, White, Gold
-  '🇯🇴': ['#000000', '#ffffff', '#ff0000'], // Black, White, Red
-  '🇰🇪': ['#000000', '#ffffff', '#ff0000'], // Black, White, Red
-  '🇰🇷': ['#003478', '#ffffff', '#c60c30'], // Dark Blue, White, Red
-  '🇱🇻': ['#9d2235', '#ffffff', '#ffcd00'], // Red, White, Gold
-  '🇱🇹': ['#ffcc00', '#ffffff', '#c41e3a'], // Gold, White, Red
-  '🇲🇦': ['#ce1126', '#ffffff', '#006c35'], // Red, White, Green
-  '🇲🇾': ['#007a5e', '#ffffff', '#ffcd00'], // Green, White, Gold
-  '🇲🇽': ['#006341', '#ffffff', '#ff0000'], // Green, White, Red
-  '🇲🇲': ['#ffcc00', '#ffffff', '#00aaff'], // Gold, White, Light Blue
-  '🇳🇱': ['#21468b', '#ffffff', '#ff0000'], // Blue, White, Red
-  '🇳🇿': ['#012169', '#000000', '#ffcd00'], // Dark Blue, Black, Gold
-  '🇳🇬': ['#008751', '#ffffff', '#ff0000'], // Green, White, Red
-  '🇳🇴': ['#186b48', '#ffffff', '#ff0000'], // Green, White, Red
-  '🇵🇦': ['#00aaff', '#ff0000', '#ffffff'], // Light Blue, Red, White
-  '🇵🇰': ['#012169', '#ffffff', '#00aa00'], // Dark Blue, White, Green
-  '🇵🇪': ['#ff0000', '#ffffff', '#ffcd00'], // Red, White, Gold
-  '🇵🇭': ['#0066ff', '#ffffff', '#ffcc00'], // Blue, White, Gold
-  '🇵🇱': ['#ffffff', '#ff0000', '#000000'], // White, Red, Black
-  '🇵🇹': ['#006600', '#ff0000', '#ffcd00'], // Green, Red, Gold
-  '🇷🇴': ['#002395', '#ffcd00', '#ff0000'], // Blue, Gold, Red
-  '🇷🇺': ['#ffffff', '#0039a6', '#ff0000'], // White, Blue, Red
-  '🇸🇦': ['#006c35', '#ffffff', '#000000'], // Green, White, Black
-  '🇸🇬': ['#ffffff', '#ff0000', '#000000'], // White, Red, Black
-  '🇸🇰': ['#ffffff', '#0052cc', '#ff0000'], // White, Blue, Red
-  '🇸🇮': ['#ffffff', '#0052cc', '#ff0000'], // White, Blue, Red
-  '🇿🇦': ['#000000', '#ff0000', '#007a5e'], // Black, Red, Green
-  '🇪🇸': ['#ffc400', '#ff0000', '#ffffff'], // Gold, Red, White
-  '🇱🇰': ['#0052cc', '#ff9933', '#006b3f'], // Blue, Orange, Green
-  '🇸🇪': ['#0052cc', '#ffcd00', '#000000'], // Blue, Gold, Black
-  '🇨🇭': ['#ff0000', '#ffffff', '#000000'], // Red, White, Black
-  '🇹🇼': ['#0052cc', '#ff0000', '#ffcd00'], // Blue, Red, Gold
-  '🇹🇭': ['#2d2d7f', '#ff0000', '#ffffff'], // Purple-Blue, Red, White
-  '🇹🇷': ['#ff0000', '#ffffff', '#ffcd00'], // Red, White, Gold
-  '🇺🇦': ['#0052cc', '#ffcd00', '#ff0000'], // Blue, Gold, Red
-  '🇦🇪': ['#000000', '#ff0000', '#ffffff'], // Black, Red, White
-  '🇬🇧': ['#012169', '#ffffff', '#c8102e'], // Dark Blue, White, Red
-  '🇺🇸': ['#0a3161', '#ffffff', '#ff0000'], // Dark Blue, White, Red
-  '🇻🇳': ['#ce1126', '#ffcd00', '#000000'], // Red, Gold, Black
+  'af': ['#ce1126', '#008000', '#000000'],
+  'al': ['#002395', '#e60000', '#ffffff'],
+  'dz': ['#007a5e', '#ffffff', '#ff0000'],
+  'ar': ['#75aadb', '#ffffff', '#ffcc00'],
+  'au': ['#00008b', '#ffcd00', '#008000'],
+  'at': ['#ed2939', '#ffffff', '#000000'],
+  'be': ['#000000', '#ffcd00', '#ff0000'],
+  'br': ['#009c3b', '#ffcd00', '#2b8cc4'],
+  'bg': ['#ffffff', '#00966e', '#d62612'],
+  'kh': ['#0052cc', '#ff0000', '#ffcd00'],
+  'ca': ['#ff0000', '#ffffff', '#ff6b6b'],
+  'cl': ['#0039a6', '#ffffff', '#ff0000'],
+  'cn': ['#de2910', '#ffcd00', '#000000'],
+  'co': ['#ffcd00', '#0066cc', '#ff0000'],
+  'hr': ['#171796', '#ffffff', '#f00000'],
+  'cu': ['#002a8f', '#ffffff', '#ff0000'],
+  'cz': ['#ffffff', '#ff0000', '#11006e'],
+  'dk': ['#c8102e', '#ffffff', '#000000'],
+  'eg': ['#ce1126', '#ffffff', '#000000'],
+  'ee': ['#4891d9', '#000000', '#ffffff'],
+  'fi': ['#003580', '#ffffff', '#ffcd00'],
+  'fr': ['#002395', '#ffffff', '#ff0000'],
+  'de': ['#000000', '#ff0000', '#ffcd00'],
+  'gr': ['#0d47a1', '#ffffff', '#1976d2'],
+  'hk': ['#de2910', '#ffffff', '#000000'],
+  'hu': ['#004b87', '#ffffff', '#00aa00'],
+  'is': ['#0052cc', '#ffffff', '#ff0000'],
+  'in': ['#ff9933', '#ffffff', '#138808'],
+  'id': ['#ff0000', '#ffffff', '#000000'],
+  'ie': ['#009543', '#ffffff', '#ff9e1b'],
+  'il': ['#0038b8', '#ffffff', '#00aaff'],
+  'it': ['#009246', '#ffffff', '#ff0000'],
+  'jp': ['#bc002d', '#ffffff', '#ffcd00'],
+  'jo': ['#000000', '#ffffff', '#ff0000'],
+  'ke': ['#000000', '#ffffff', '#ff0000'],
+  'kr': ['#003478', '#ffffff', '#c60c30'],
+  'lv': ['#9d2235', '#ffffff', '#ffcd00'],
+  'lt': ['#ffcc00', '#ffffff', '#c41e3a'],
+  'ma': ['#ce1126', '#ffffff', '#006c35'],
+  'my': ['#007a5e', '#ffffff', '#ffcd00'],
+  'mx': ['#006341', '#ffffff', '#ff0000'],
+  'mm': ['#ffcc00', '#ffffff', '#00aaff'],
+  'nl': ['#21468b', '#ffffff', '#ff0000'],
+  'nz': ['#012169', '#000000', '#ffcd00'],
+  'ng': ['#008751', '#ffffff', '#ff0000'],
+  'no': ['#186b48', '#ffffff', '#ff0000'],
+  'pa': ['#00aaff', '#ff0000', '#ffffff'],
+  'pk': ['#012169', '#ffffff', '#00aa00'],
+  'pe': ['#ff0000', '#ffffff', '#ffcd00'],
+  'ph': ['#0066ff', '#ffffff', '#ffcc00'],
+  'pl': ['#ffffff', '#ff0000', '#000000'],
+  'pt': ['#006600', '#ff0000', '#ffcd00'],
+  'ro': ['#002395', '#ffcd00', '#ff0000'],
+  'ru': ['#ffffff', '#0039a6', '#ff0000'],
+  'sa': ['#006c35', '#ffffff', '#000000'],
+  'sg': ['#ffffff', '#ff0000', '#000000'],
+  'sk': ['#ffffff', '#0052cc', '#ff0000'],
+  'si': ['#ffffff', '#0052cc', '#ff0000'],
+  'za': ['#000000', '#ff0000', '#007a5e'],
+  'es': ['#ffc400', '#ff0000', '#ffffff'],
+  'lk': ['#0052cc', '#ff9933', '#006b3f'],
+  'se': ['#0052cc', '#ffcd00', '#000000'],
+  'ch': ['#ff0000', '#ffffff', '#000000'],
+  'tw': ['#0052cc', '#ff0000', '#ffcd00'],
+  'th': ['#2d2d7f', '#ff0000', '#ffffff'],
+  'tr': ['#ff0000', '#ffffff', '#ffcd00'],
+  'ua': ['#0052cc', '#ffcd00', '#ff0000'],
+  'ae': ['#000000', '#ff0000', '#ffffff'],
+  'gb': ['#012169', '#ffffff', '#c8102e'],
+  'us': ['#0a3161', '#ffffff', '#ff0000'],
+  'vn': ['#ce1126', '#ffcd00', '#000000'],
 };
 
 // ─── Known city → color map (auto-populated from data) ───
