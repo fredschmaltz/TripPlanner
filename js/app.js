@@ -33,9 +33,11 @@ function initApp() {
   const selectFolderBtn = document.getElementById('select-folder-btn');
   const selectFilesBtn  = document.getElementById('select-files-btn');
 
-  // ── Set emoji text content (avoids encoding issues with static HTML) ──
-  document.getElementById('picker-icon').textContent        = '\u{1F4C1}';
-  document.getElementById('editor-toolbar-icon').textContent = '\u270F\uFE0F';
+  // ── Set icon content (SVGs instead of emoji) ──
+  document.getElementById('picker-icon').innerHTML        = icon('folder', 40);
+  document.getElementById('editor-toolbar-icon').innerHTML = icon('edit', 18);
+  document.getElementById('tp-settings-btn').innerHTML     = icon('settings', 18);
+  document.getElementById('search-icon-el').innerHTML      = icon('search', 15);
 
   // Initialize type labels from saved language (must run after utils.js loaded)
   refreshTypeLabels();
@@ -363,27 +365,27 @@ function updateDocsButtonState() {
   const popDocsBtn = document.getElementById('tp-pop-docs');
   const total = ALL_REQUIRED_FILES.length;
   if (total === 0) {
-    loadDocsBtn.textContent = `\uD83D\uDCCE ${t('docs.noDocs')}`;
+    loadDocsBtn.innerHTML = `${icon('paperclip',14)} ${t('docs.noDocs')}`;
     loadDocsBtn.style.borderColor = 'var(--border2)';
     loadDocsBtn.style.color = 'var(--muted)';
-    if (popDocsBtn) { popDocsBtn.textContent = `\uD83D\uDCCE ${t('docs.noDocs')}`; popDocsBtn.style.color = 'var(--muted)'; }
+    if (popDocsBtn) { popDocsBtn.innerHTML = `${icon('paperclip',14)} ${t('docs.noDocs')}`; popDocsBtn.style.color = 'var(--muted)'; }
   } else {
     const matched = ALL_REQUIRED_FILES.filter(f => getDocUrl(f)).length;
     if (matched >= total) {
-      loadDocsBtn.textContent = `\uD83D\uDCCE ${total} ${t('docs.allLoaded')}`;
+      loadDocsBtn.innerHTML = `${icon('paperclip',14)} ${total} ${t('docs.allLoaded')}`;
       loadDocsBtn.style.borderColor = '#6fcf97';
       loadDocsBtn.style.color = '#6fcf97';
-      if (popDocsBtn) { popDocsBtn.textContent = `\uD83D\uDCCE ${total} ${t('docs.allLoaded')}`; popDocsBtn.style.color = '#6fcf97'; }
+      if (popDocsBtn) { popDocsBtn.innerHTML = `${icon('paperclip',14)} ${total} ${t('docs.allLoaded')}`; popDocsBtn.style.color = '#6fcf97'; }
     } else if (matched === 0) {
-      loadDocsBtn.textContent = `\uD83D\uDCCE ${t('docs.load')} ${total} ${total > 1 ? t('docs.docs') : t('docs.doc')}`;
+      loadDocsBtn.innerHTML = `${icon('paperclip',14)} ${t('docs.load')} ${total} ${total > 1 ? t('docs.docs') : t('docs.doc')}`;
       loadDocsBtn.style.borderColor = '#e8a85a';
       loadDocsBtn.style.color = '#e8a85a';
-      if (popDocsBtn) { popDocsBtn.textContent = `\uD83D\uDCCE ${t('docs.load')} ${total} ${total > 1 ? t('docs.docs') : t('docs.doc')}`; popDocsBtn.style.color = '#e8a85a'; }
+      if (popDocsBtn) { popDocsBtn.innerHTML = `${icon('paperclip',14)} ${t('docs.load')} ${total} ${total > 1 ? t('docs.docs') : t('docs.doc')}`; popDocsBtn.style.color = '#e8a85a'; }
     } else {
-      loadDocsBtn.textContent = `\uD83D\uDCCE ${matched}/${total}`;
+      loadDocsBtn.innerHTML = `${icon('paperclip',14)} ${matched}/${total}`;
       loadDocsBtn.style.borderColor = '#e8a85a';
       loadDocsBtn.style.color = '#e8a85a';
-      if (popDocsBtn) { popDocsBtn.textContent = `\uD83D\uDCCE ${matched}/${total}`; popDocsBtn.style.color = '#e8a85a'; }
+      if (popDocsBtn) { popDocsBtn.innerHTML = `${icon('paperclip',14)} ${matched}/${total}`; popDocsBtn.style.color = '#e8a85a'; }
     }
   }
 }
@@ -401,19 +403,19 @@ function loadSampleTrip() {
       year: "2026",
       subtitle: "28 April – 22 May · 25 days · 6 cities",
       route: [
-        { flag: "🇩🇪", city: "Berlin" },
-        { flag: "🇨🇳", city: "Joshland" },
+        { flag: "de", city: "Berlin" },
+        { flag: "cn", city: "Joshland" },
       ]
     },
     attachmentsBasePath: "",
     days: [
       {
-        date: "Wed 29 Apr", flag: "🇯🇵", city: "Joshland", color: "#e94560",
+        date: "Wed 29 Apr", flag: "jp", city: "Joshland", color: "#e94560",
         food: [],
         files: [],
         cards: [
           {
-            time: "Check-in 15:00", type: "stay", icon: "🏨",
+            time: "Check-in 15:00", type: "stay", icon: "bed",
             title: "Hotel Stay Well",
             sub: "Double Room – Non Smoking · 5 nights",
             tags: ["€349.40|price", "Paid|paid"],
@@ -424,26 +426,26 @@ function loadSampleTrip() {
         ]
       },
       {
-        date: "Thu 30 Apr", flag: "🇯🇵", city: "Tokyo", color: "#e94560",
+        date: "Thu 30 Apr", flag: "jp", city: "Tokyo", color: "#e94560",
         food: [
-          { e: "🍡", dish: "Taiyaki & Street Sweets", desc: "Nakamise Street — grab taiyaki (fish-shaped waffles)." },
-          { e: "🍣", dish: "Sushi", desc: "Tsukiji Outer Market is a short detour — fresh nigiri." }
+          { e: "skewer", dish: "Taiyaki & Street Sweets", desc: "Nakamise Street — grab taiyaki (fish-shaped waffles)." },
+          { e: "sushi", dish: "Sushi", desc: "Tsukiji Outer Market is a short detour — fresh nigiri." }
         ],
         cards: [
           {
-            time: "08:00–09:30", type: "temple", icon: "⛩️",
+            time: "08:00–09:30", type: "temple", icon: "torii",
             title: "Senso-ji", sub: "Temple visit",
             maps: "Senso-ji Temple, Asakusa, Tokyo",
             tips: ["Arrive before 9am to beat crowds.", "Pull an omikuji fortune slip — ¥100."]
           },
           {
-            time: "10:00–12:30", type: "viewpoint", icon: "🗼",
+            time: "10:00–12:30", type: "viewpoint", icon: "tower",
             title: "Tokyo Skytree", tags: ["€9.66|price"],
             maps: "Tokyo Skytree, Sumida, Tokyo",
             tips: ["Book Tembo Deck online to skip queues."]
           },
           {
-            time: "18:00–21:00", type: "nightlife", icon: "🍻",
+            time: "18:00–21:00", type: "nightlife", icon: "beer",
             title: "Dinner · Ueno",
             maps: "Ueno, Taito, Tokyo",
             tips: ["Try the izakaya alleys east of the station."]
@@ -516,12 +518,6 @@ function initTrip(data) {
 
   // Apply past day visual states
   applyPastDayClasses();
-
-  positionRailLines();
-  window.removeEventListener('scroll', positionRailLines);
-  window.removeEventListener('resize', positionRailLines);
-  window.addEventListener('scroll', positionRailLines, { passive: true });
-  window.addEventListener('resize', positionRailLines);
 }
 
 function collectAllFiles(data) {
@@ -615,7 +611,6 @@ function setCardStyle(style) {
   // Re-render if trip is loaded
   if (TRIP_CONFIG) {
     renderTimeline();
-    positionRailLines();
     applyPastDayClasses();
   }
   // Auto-save to config JSON if file system available
@@ -667,7 +662,7 @@ window.clickDocItem = clickDocItem;
 window.toggleDay = toggleDay;
 window.toggleFood = toggleFood;
 window.toggleLocation = toggleLocation;
-window.toggleCountrySummary = toggleCountrySummary;
+window.toggleLegendFilter = toggleLegendFilter;
 window.collapseCard = collapseCard;
 window.openEditor = openEditor;
 window.closeEditor = closeEditor;
@@ -714,7 +709,6 @@ window.toggleCardVisited = toggleCardVisited;
 window.toggleGrayPast = toggleGrayPast;
 window.applyPastDayClasses = applyPastDayClasses;
 window.toggleDayMap = toggleDayMap;
-window.initCountrySummaryMap = initCountrySummaryMap;
 window.toggleTripRouteMap = toggleTripRouteMap;
 window.edSearchLocation = edSearchLocation;
 window.edPickResult = edPickResult;
