@@ -90,10 +90,10 @@ const TRANSLATIONS = {
   'summary.toPay':             'to pay',
 
   // ─── Editor — Sections ───
-  'ed.tripInfo':               '\uD83D\uDDFA\uFE0F Trip Info',
-  'ed.route':                  '\uD83E\uDDED Route',
-  'ed.badges':                 '\uD83C\uDFF7\uFE0F Header Badges',
-  'ed.days':                   '\uD83D\uDCC5 Days',
+  'ed.tripInfo':               'Trip Info',
+  'ed.route':                  'Route',
+  'ed.badges':                 'Header Badges',
+  'ed.days':                   'Days',
   'ed.tripEditor':             'Trip Editor',
 
   // ─── Editor — Labels ───
@@ -156,15 +156,15 @@ const TRANSLATIONS = {
   'ed.notInRoute':             'not in route',
 
   // ─── Editor — Food / Files / Cards ───
-  'ed.foodTips':               '\uD83C\uDF5B Food Tips',
+  'ed.foodTips':               'Food Tips',
   'ed.dishName':               'Dish name',
   'ed.description':            'Description',
   'ed.addFoodTip':             '+ Food Tip',
-  'ed.files':                  '\uD83D\uDCCE Files',
+  'ed.files':                  'Files',
   'ed.filename':               'filename.pdf',
   'ed.displayLabel':           'Display label',
   'ed.addFile':                '+ File',
-  'ed.cardsSection':           '\uD83D\uDCCB Cards',
+  'ed.cardsSection':           'Cards',
   'ed.sortCards':              'Sort cards:',
   'ed.timeAsc':                '\u2191 Time',
   'ed.timeDesc':               '\u2193 Time',
@@ -284,6 +284,7 @@ const TRANSLATIONS = {
   'ui.classic':                'Classic',
   'ui.bento':                  'Bento',
   'ui.minimal':                'Minimal',
+  'ui.playful':                'Playful',
   'ui.actions':                'Actions',
   'ui.options':                'Options',
   'ui.grayPast':               'Gray past days',
@@ -317,8 +318,8 @@ const TRANSLATIONS = {
 
   // ─── View Modes ───
   'view.all':                    'All',
-  'view.byDay':                  'By Day',
-  'view.byCity':                 'By City',
+  'view.byDay':                  'Day',
+  'view.byCity':                 'City',
   'view.paged':                  'Paged',
   'view.prev':                   'Previous',
   'view.next':                   'Next',
@@ -431,10 +432,10 @@ const TRANSLATIONS_PTBR = {
   'summary.toPay':             'a pagar',
 
   // ─── Editor — Sections ───
-  'ed.tripInfo':               '\uD83D\uDDFA\uFE0F Info da Viagem',
-  'ed.route':                  '\uD83E\uDDED Rota',
-  'ed.badges':                 '\uD83C\uDFF7\uFE0F Selos do Cabe\u00E7alho',
-  'ed.days':                   '\uD83D\uDCC5 Dias',
+  'ed.tripInfo':               'Info da Viagem',
+  'ed.route':                  'Rota',
+  'ed.badges':                 'Selos do Cabe\u00E7alho',
+  'ed.days':                   'Dias',
   'ed.tripEditor':             'Editor de Viagem',
 
   // ─── Editor — Labels ───
@@ -497,15 +498,15 @@ const TRANSLATIONS_PTBR = {
   'ed.notInRoute':             'fora da rota',
 
   // ─── Editor — Food / Files / Cards ───
-  'ed.foodTips':               '\uD83C\uDF5B Dicas Gastron\u00F4micas',
+  'ed.foodTips':               'Dicas Gastron\u00F4micas',
   'ed.dishName':               'Nome do prato',
   'ed.description':            'Descri\u00E7\u00E3o',
   'ed.addFoodTip':             '+ Dica Gastron\u00F4mica',
-  'ed.files':                  '\uD83D\uDCCE Arquivos',
+  'ed.files':                  'Arquivos',
   'ed.filename':               'arquivo.pdf',
   'ed.displayLabel':           'R\u00F3tulo de exibi\u00E7\u00E3o',
   'ed.addFile':                '+ Arquivo',
-  'ed.cardsSection':           '\uD83D\uDCCB Cart\u00F5es',
+  'ed.cardsSection':           'Cart\u00F5es',
   'ed.sortCards':              'Ordenar cart\u00F5es:',
   'ed.timeAsc':                '\u2191 Hor\u00E1rio',
   'ed.timeDesc':               '\u2193 Hor\u00E1rio',
@@ -625,6 +626,7 @@ const TRANSLATIONS_PTBR = {
   'ui.classic':                'Cl\u00E1ssico',
   'ui.bento':                  'Bento',
   'ui.minimal':                'Minimal',
+  'ui.playful':                'Colorido',
   'ui.actions':                'A\u00E7\u00F5es',
   'ui.options':                'Op\u00E7\u00F5es',
   'ui.grayPast':               'Dias passados em cinza',
@@ -658,8 +660,8 @@ const TRANSLATIONS_PTBR = {
 
   // ─── View Modes ───
   'view.all':                    'Tudo',
-  'view.byDay':                  'Por Dia',
-  'view.byCity':                 'Por Cidade',
+  'view.byDay':                  'Dia',
+  'view.byCity':                 'Cidade',
   'view.paged':                  'P\u00E1ginas',
   'view.prev':                   'Anterior',
   'view.next':                   'Pr\u00F3ximo',
@@ -724,7 +726,6 @@ function setLanguage(lang) {
     renderHeader();
     renderLegend();
     renderTimeline();
-    positionRailLines();
     applyPastDayClasses();
   } else {
     applyPickerTranslations();
@@ -784,33 +785,33 @@ function refreshTypeLabels() {
 }
 
 /**
- * PT-BR country name map (flag → Portuguese name).
+ * PT-BR country name map (ISO code → Portuguese name).
  */
 const COUNTRY_NAMES_PTBR = {
-  '🇦🇫': 'Afeganist\u00E3o', '🇦🇱': 'Alb\u00E2nia', '🇩🇿': 'Arg\u00E9lia',
-  '🇦🇷': 'Argentina', '🇦🇺': 'Austr\u00E1lia', '🇦🇹': '\u00C1ustria',
-  '🇧🇪': 'B\u00E9lgica', '🇧🇷': 'Brasil', '🇧🇬': 'Bulg\u00E1ria',
-  '🇰🇭': 'Camboja', '🇨🇦': 'Canad\u00E1', '🇨🇱': 'Chile',
-  '🇨🇳': 'China', '🇨🇴': 'Col\u00F4mbia', '🇭🇷': 'Cro\u00E1cia',
-  '🇨🇺': 'Cuba', '🇨🇿': 'Tch\u00E9quia', '🇩🇰': 'Dinamarca',
-  '🇪🇬': 'Egito', '🇪🇪': 'Est\u00F4nia', '🇫🇮': 'Finl\u00E2ndia',
-  '🇫🇷': 'Fran\u00E7a', '🇩🇪': 'Alemanha', '🇬🇷': 'Gr\u00E9cia',
-  '🇭🇰': 'Hong Kong', '🇭🇺': 'Hungria', '🇮🇸': 'Isl\u00E2ndia',
-  '🇮🇳': '\u00CDndia', '🇮🇩': 'Indon\u00E9sia', '🇮🇪': 'Irlanda',
-  '🇮🇱': 'Israel', '🇮🇹': 'It\u00E1lia', '🇯🇵': 'Jap\u00E3o',
-  '🇯🇴': 'Jord\u00E2nia', '🇰🇪': 'Qu\u00EAnia', '🇰🇷': 'Coreia do Sul',
-  '🇱🇻': 'Let\u00F4nia', '🇱🇹': 'Litu\u00E2nia', '🇲🇾': 'Mal\u00E1sia',
-  '🇲🇽': 'M\u00E9xico', '🇲🇦': 'Marrocos', '🇲🇲': 'Mianmar',
-  '🇳🇱': 'Pa\u00EDses Baixos', '🇳🇿': 'Nova Zel\u00E2ndia', '🇳🇬': 'Nig\u00E9ria',
-  '🇳🇴': 'Noruega', '🇵🇰': 'Paquist\u00E3o', '🇵🇪': 'Peru',
-  '🇵🇭': 'Filipinas', '🇵🇱': 'Pol\u00F4nia', '🇵🇹': 'Portugal',
-  '🇷🇴': 'Rom\u00EAnia', '🇷🇺': 'R\u00FAssia', '🇸🇦': 'Ar\u00E1bia Saudita',
-  '🇸🇬': 'Singapura', '🇸🇰': 'Eslov\u00E1quia', '🇸🇮': 'Eslov\u00EAnia',
-  '🇿🇦': '\u00C1frica do Sul', '🇪🇸': 'Espanha', '🇱🇰': 'Sri Lanka',
-  '🇸🇪': 'Su\u00E9cia', '🇨🇭': 'Su\u00ED\u00E7a', '🇹🇼': 'Taiwan',
-  '🇹🇭': 'Tail\u00E2ndia', '🇹🇷': 'Turquia', '🇺🇦': 'Ucr\u00E2nia',
-  '🇦🇪': 'Emirados \u00C1rabes', '🇬🇧': 'Reino Unido', '🇺🇸': 'Estados Unidos',
-  '🇻🇳': 'Vietn\u00E3',
+  'af': 'Afeganist\u00E3o', 'al': 'Alb\u00E2nia', 'dz': 'Arg\u00E9lia',
+  'ar': 'Argentina', 'au': 'Austr\u00E1lia', 'at': '\u00C1ustria',
+  'be': 'B\u00E9lgica', 'br': 'Brasil', 'bg': 'Bulg\u00E1ria',
+  'kh': 'Camboja', 'ca': 'Canad\u00E1', 'cl': 'Chile',
+  'cn': 'China', 'co': 'Col\u00F4mbia', 'hr': 'Cro\u00E1cia',
+  'cu': 'Cuba', 'cz': 'Tch\u00E9quia', 'dk': 'Dinamarca',
+  'eg': 'Egito', 'ee': 'Est\u00F4nia', 'fi': 'Finl\u00E2ndia',
+  'fr': 'Fran\u00E7a', 'de': 'Alemanha', 'gr': 'Gr\u00E9cia',
+  'hk': 'Hong Kong', 'hu': 'Hungria', 'is': 'Isl\u00E2ndia',
+  'in': '\u00CDndia', 'id': 'Indon\u00E9sia', 'ie': 'Irlanda',
+  'il': 'Israel', 'it': 'It\u00E1lia', 'jp': 'Jap\u00E3o',
+  'jo': 'Jord\u00E2nia', 'ke': 'Qu\u00EAnia', 'kr': 'Coreia do Sul',
+  'lv': 'Let\u00F4nia', 'lt': 'Litu\u00E2nia', 'my': 'Mal\u00E1sia',
+  'mx': 'M\u00E9xico', 'ma': 'Marrocos', 'mm': 'Mianmar',
+  'nl': 'Pa\u00EDses Baixos', 'nz': 'Nova Zel\u00E2ndia', 'ng': 'Nig\u00E9ria',
+  'no': 'Noruega', 'pk': 'Paquist\u00E3o', 'pe': 'Peru',
+  'ph': 'Filipinas', 'pl': 'Pol\u00F4nia', 'pt': 'Portugal',
+  'ro': 'Rom\u00EAnia', 'ru': 'R\u00FAssia', 'sa': 'Ar\u00E1bia Saudita',
+  'sg': 'Singapura', 'sk': 'Eslov\u00E1quia', 'si': 'Eslov\u00EAnia',
+  'za': '\u00C1frica do Sul', 'es': 'Espanha', 'lk': 'Sri Lanka',
+  'se': 'Su\u00E9cia', 'ch': 'Su\u00ED\u00E7a', 'tw': 'Taiwan',
+  'th': 'Tail\u00E2ndia', 'tr': 'Turquia', 'ua': 'Ucr\u00E2nia',
+  'ae': 'Emirados \u00C1rabes', 'gb': 'Reino Unido', 'us': 'Estados Unidos',
+  'vn': 'Vietn\u00E3',
 };
 
 /**
@@ -856,11 +857,11 @@ function applySettingsLabels() {
   });
   // Update popover action button text
   const popDocs = document.getElementById('tp-pop-docs');
-  if (popDocs) popDocs.textContent = '\uD83D\uDCCE ' + t('btn.documents');
+  if (popDocs) popDocs.innerHTML = icon('paperclip',14) + ' ' + t('btn.documents');
   const popEdit = document.getElementById('tp-pop-edit');
-  if (popEdit) popEdit.textContent = '\u270F\uFE0F ' + t('btn.edit');
+  if (popEdit) popEdit.innerHTML = icon('edit',14) + ' ' + t('btn.edit');
   const popChange = document.getElementById('tp-pop-change');
-  if (popChange) popChange.textContent = '\uD83D\uDCCB ' + t('btn.changeTrip');
+  if (popChange) popChange.innerHTML = icon('clipboard',14) + ' ' + t('btn.changeTrip');
 }
 
 /**
@@ -900,23 +901,23 @@ function applyPickerTranslations() {
 
   // Buttons
   const newBtn = el('new-trip-btn');
-  if (newBtn) newBtn.textContent = '\u270F\uFE0F ' + t('btn.newTrip');
+  if (newBtn) newBtn.innerHTML = icon('plus',14) + ' ' + t('btn.newTrip');
   const changeBtn = el('change-trip-btn');
-  if (changeBtn) changeBtn.textContent = '\uD83D\uDCCB ' + t('btn.changeTrip');
+  if (changeBtn) changeBtn.innerHTML = icon('clipboard',14) + ' ' + t('btn.changeTrip');
   const editBtn = el('edit-trip-btn');
-  if (editBtn) editBtn.textContent = '\u270F\uFE0F ' + t('btn.edit');
+  if (editBtn) editBtn.innerHTML = icon('edit',14) + ' ' + t('btn.edit');
   const docsBtn = el('load-docs-btn');
   if (docsBtn && (!TRIP_CONFIG || ALL_REQUIRED_FILES.length === 0)) {
-    docsBtn.textContent = '\uD83D\uDCCE ' + t('btn.loadDocs');
+    docsBtn.innerHTML = icon('paperclip',14) + ' ' + t('btn.loadDocs');
   }
   const panelTitle = el('docs-panel-title');
-  if (panelTitle) panelTitle.textContent = '\uD83D\uDCCE ' + t('btn.documents');
+  if (panelTitle) panelTitle.innerHTML = icon('paperclip',14) + ' ' + t('btn.documents');
   const folderBtn = el('select-folder-btn');
-  if (folderBtn) folderBtn.textContent = '\uD83D\uDCC1 ' + t('btn.selectFolder');
+  if (folderBtn) folderBtn.innerHTML = icon('folder',14) + ' ' + t('btn.selectFolder');
   const filesBtn = el('select-files-btn');
-  if (filesBtn) filesBtn.textContent = '\uD83D\uDCC4 ' + t('btn.selectFiles');
+  if (filesBtn) filesBtn.innerHTML = icon('file',14) + ' ' + t('btn.selectFiles');
   const saveBtn = el('editor-save-btn');
-  if (saveBtn) saveBtn.textContent = '\uD83D\uDCBE ' + t('btn.save');
+  if (saveBtn) saveBtn.innerHTML = icon('save',14) + ' ' + t('btn.save');
 
   // Editor toolbar
   const toolbarTitle = document.querySelector('.editor-toolbar-title');
@@ -928,17 +929,17 @@ function applyPickerTranslations() {
   const featuresCt = el('picker-features');
   if (featuresCt) {
     const features = [
-      ['\uD83C\uDF0F', t('feat.timeline')],
-      ['\uD83D\uDCB0', t('feat.budget')],
-      ['\uD83D\uDCCD', t('feat.maps')],
-      ['\uD83D\uDCC4', t('feat.docs')],
-      ['\u2708\uFE0F', t('feat.routes')],
-      ['\uD83C\uDFE8', t('feat.accommodation')],
-      ['\uD83C\uDF72', t('feat.food')],
-      ['\uD83C\uDFF7\uFE0F', t('feat.tags')]
+      ['globe', t('feat.timeline')],
+      ['wallet', t('feat.budget')],
+      ['map-pin', t('feat.maps')],
+      ['file', t('feat.docs')],
+      ['plane', t('feat.routes')],
+      ['bed', t('feat.accommodation')],
+      ['utensils', t('feat.food')],
+      ['tag', t('feat.tags')]
     ];
-    featuresCt.innerHTML = features.map(([icon, text]) =>
-      `<span class="picker-feature">${icon} ${text}</span>`
+    featuresCt.innerHTML = features.map(([ic, text]) =>
+      `<span class="feature-pill">${icon(ic,14)} ${text}</span>`
     ).join('');
   }
 }
@@ -948,9 +949,9 @@ function applyPickerTranslations() {
  */
 function applyTripViewTranslations() {
   const changeBtn = document.getElementById('change-trip-btn');
-  if (changeBtn) changeBtn.textContent = '\uD83D\uDCCB ' + t('btn.changeTrip');
+  if (changeBtn) changeBtn.innerHTML = icon('clipboard',14) + ' ' + t('btn.changeTrip');
   const editBtn = document.getElementById('edit-trip-btn');
-  if (editBtn) editBtn.textContent = '\u270F\uFE0F ' + t('btn.edit');
+  if (editBtn) editBtn.innerHTML = icon('edit',14) + ' ' + t('btn.edit');
   // updateDocsButtonState will handle docs button text
   if (TRIP_CONFIG) updateDocsButtonState();
 }
