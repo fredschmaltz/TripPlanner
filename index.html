@@ -12,7 +12,7 @@
 <body>
 
 <div class="tp-settings-wrap" id="tp-settings-wrap">
-  <button class="tp-settings-btn" onclick="toggleSettingsPopover()" title="Settings">⚙</button>
+  <button class="tp-settings-btn" onclick="toggleSettingsPopover()" title="Settings" id="tp-settings-btn"></button>
   <div class="tp-settings-popover hidden" id="tp-settings-popover">
     <div class="tp-settings-group">
       <span class="tp-settings-label" id="tp-lbl-theme">Theme</span>
@@ -34,14 +34,15 @@
         <button class="tp-style-btn active" data-style="classic" onclick="setCardStyle('classic')">Classic</button>
         <button class="tp-style-btn" data-style="bento" onclick="setCardStyle('bento')">Bento</button>
         <button class="tp-style-btn" data-style="minimal" onclick="setCardStyle('minimal')">Minimal</button>
+        <button class="tp-style-btn" data-style="playful" onclick="setCardStyle('playful')">Playful</button>
       </div>
     </div>
     <div class="tp-actions-group" id="tp-actions-group">
       <span class="tp-settings-label" id="tp-lbl-actions">Actions</span>
       <div class="tp-actions-list">
-        <button class="tp-action-item" id="tp-pop-docs" onclick="document.getElementById('load-docs-btn').click();toggleSettingsPopover()">📎 Docs</button>
-        <button class="tp-action-item" id="tp-pop-edit" onclick="openEditor(false);toggleSettingsPopover()">✏️ Edit</button>
-        <button class="tp-action-item" id="tp-pop-change" onclick="document.getElementById('change-trip-btn').click();toggleSettingsPopover()">📋 Change</button>
+        <button class="tp-action-item" id="tp-pop-docs" onclick="document.getElementById('load-docs-btn').click();toggleSettingsPopover()"></button>
+        <button class="tp-action-item" id="tp-pop-edit" onclick="openEditor(false);toggleSettingsPopover()"></button>
+        <button class="tp-action-item" id="tp-pop-change" onclick="document.getElementById('change-trip-btn').click();toggleSettingsPopover()"></button>
       </div>
     </div>
     <div class="tp-settings-group tp-settings-toggles" id="tp-toggles-group" style="display:none">
@@ -102,7 +103,7 @@
   <div class="legend" id="trip-legend"></div>
   <div class="timeline-controls" id="timeline-controls">
     <div class="search-bar">
-      <span class="search-icon">🔍</span>
+      <span class="search-icon" id="search-icon-el"></span>
       <input type="text" id="timeline-search-input" class="search-input" placeholder="Search timeline…" autocomplete="off">
       <button class="search-clear hidden" id="search-clear-btn" onclick="clearTimelineSearch()" title="Clear">&times;</button>
     </div>
@@ -136,6 +137,7 @@
   <div class="editor-body" id="editor-body"></div>
 </div>
 
+<script src="js/icons.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/display.js"></script>
