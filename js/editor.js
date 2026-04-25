@@ -411,7 +411,7 @@ function renderTripInfoSection() {
   <div class="editor-section open">
     <div class="editor-section-header" onclick="toggleEditorSection(this)">
       <span class="editor-section-chevron">▶</span>
-      <span class="editor-section-title">${t('ed.tripInfo')}</span>
+      <span class="editor-section-title">${icon('map',14)} ${t('ed.tripInfo')}</span>
     </div>
     <div class="editor-section-body">
       <div class="editor-row">
@@ -449,11 +449,11 @@ function renderRouteSection() {
   const stops = route.map((r, i) => {
     const currentFlagOptions = COUNTRY_FLAGS.map(c => {
       const sel = r.flag === c.flag ? ' selected' : '';
-      return `<option value="${c.flag}"${sel}>${c.flag} ${c.name}</option>`;
+      return `<option value="${c.flag}"${sel}>${c.flag.toUpperCase()} · ${c.name}</option>`;
     }).join('');
     const hasCoords = r.lat && r.lng;
     const coordBadge = hasCoords
-      ? `<span class="editor-loc-coord" style="font-size:0.6rem;margin-left:4px" title="${r.lat}, ${r.lng}">📍</span>`
+      ? `<span class="editor-loc-coord" style="font-size:0.6rem;margin-left:4px" title="${r.lat}, ${r.lng}">${icon('map-pin',11)}</span>`
       : '';
     const qId = `route-city-q-${i}`;
     const rId = `route-city-r-${i}`;
@@ -471,7 +471,7 @@ function renderRouteSection() {
             oninput="edRenameRouteCityDebounced(${i},this.value)"
             onkeydown="if(event.key==='Enter'){event.preventDefault();edSearchRouteCity(${i},this.value)}">
           ${coordBadge}
-          <button class="editor-loc-search-btn" onclick="edSearchRouteCity(${i},document.getElementById('${qId}').value)" title="${t('ed.locSearch')}">🔍</button>
+          <button class="editor-loc-search-btn" onclick="edSearchRouteCity(${i},document.getElementById('${qId}').value)" title="${t('ed.locSearch')}">${icon('search',14)}</button>
         </div>
         <div class="editor-loc-results" id="${rId}"></div>
       </div>
@@ -487,7 +487,7 @@ function renderRouteSection() {
   <div class="editor-section">
     <div class="editor-section-header" onclick="toggleEditorSection(this)">
       <span class="editor-section-chevron">▶</span>
-      <span class="editor-section-title">${t('ed.route')}</span>
+      <span class="editor-section-title">${icon('compass',14)} ${t('ed.route')}</span>
       <span class="editor-section-badge">${route.length} ${t('ed.stops')}</span>
     </div>
     <div class="editor-section-body" id="ed-route-body">
@@ -703,7 +703,7 @@ function renderBadgesSection() {
   <div class="editor-section">
     <div class="editor-section-header" onclick="toggleEditorSection(this)">
       <span class="editor-section-chevron">▶</span>
-      <span class="editor-section-title">${t('ed.badges')}</span>
+      <span class="editor-section-title">${icon('tag',14)} ${t('ed.badges')}</span>
     </div>
     <div class="editor-section-body" id="ed-badges-body">
       ${html}
@@ -722,7 +722,7 @@ function renderEsimEditor(tp) {
   const e = tp.esim;
   return `<div class="editor-badge-item">
     <div class="editor-badge-header">
-      <span class="editor-badge-icon">📶</span>
+      <span class="editor-badge-icon">${icon('signal',16)}</span>
       <span class="editor-badge-name">${t('ed.esim')}</span>
       <button class="editor-remove-btn" onclick="delete editorData.trip.esim;refreshSection('badges')" title="${t('ed.remove')}">✕</button>
     </div>
@@ -746,7 +746,7 @@ function renderInsuranceEditor(tp) {
   const ins = tp.insurance;
   const certsHTML = (ins.certificates || []).map((c, i) => `
     <div class="editor-badge-sub-item">
-      <input class="editor-inline-input flag-input" value="${c.flag || ''}" oninput="editorData.trip.insurance.certificates[${i}].flag=this.value" placeholder="🏳️">
+      <input class="editor-inline-input flag-input" value="${c.flag || ''}" oninput="editorData.trip.insurance.certificates[${i}].flag=this.value" placeholder="XX">
       <input class="editor-inline-input" style="flex:1" value="${escHtml(c.title || '')}" oninput="editorData.trip.insurance.certificates[${i}].title=this.value" placeholder="${t('ed.title')}">
       <input class="editor-inline-input" style="flex:2" value="${escHtml(c.file || '')}" oninput="editorData.trip.insurance.certificates[${i}].file=this.value" placeholder="Insurance/file.pdf">
       <button class="editor-remove-btn" onclick="editorData.trip.insurance.certificates.splice(${i},1);refreshSection('badges')">✕</button>
@@ -754,7 +754,7 @@ function renderInsuranceEditor(tp) {
 
   return `<div class="editor-badge-item">
     <div class="editor-badge-header">
-      <span class="editor-badge-icon">🛡️</span>
+      <span class="editor-badge-icon">${icon('shield',16)}</span>
       <span class="editor-badge-name">${t('ed.insurance')}</span>
       <button class="editor-remove-btn" onclick="delete editorData.trip.insurance;refreshSection('badges')">✕</button>
     </div>
@@ -769,7 +769,7 @@ function renderCustomsEditor(tp) {
   const cus = tp.customs;
   const docsHTML = (cus.documents || []).map((d, i) => `
     <div class="editor-badge-sub-item">
-      <input class="editor-inline-input flag-input" value="${d.flag || ''}" oninput="editorData.trip.customs.documents[${i}].flag=this.value" placeholder="🏳️">
+      <input class="editor-inline-input flag-input" value="${d.flag || ''}" oninput="editorData.trip.customs.documents[${i}].flag=this.value" placeholder="XX">
       <input class="editor-inline-input" style="flex:1" value="${escHtml(d.title || '')}" oninput="editorData.trip.customs.documents[${i}].title=this.value" placeholder="${t('ed.title')}">
       <input class="editor-inline-input" style="flex:2" value="${escHtml(d.file || '')}" oninput="editorData.trip.customs.documents[${i}].file=this.value" placeholder="Customs/file.pdf">
       <button class="editor-remove-btn" onclick="editorData.trip.customs.documents.splice(${i},1);refreshSection('badges')">✕</button>
@@ -777,7 +777,7 @@ function renderCustomsEditor(tp) {
 
   return `<div class="editor-badge-item">
     <div class="editor-badge-header">
-      <span class="editor-badge-icon">🛃</span>
+      <span class="editor-badge-icon">${icon('passport',16)}</span>
       <span class="editor-badge-name">${t('ed.customs')}</span>
       <button class="editor-remove-btn" onclick="delete editorData.trip.customs;refreshSection('badges')">✕</button>
     </div>
@@ -793,7 +793,7 @@ function renderCustomBadgeEditor(b, idx) {
   if (!isSimple) {
     itemsHTML = (b.items || []).map((item, ii) => `
       <div class="editor-badge-sub-item">
-        <input class="editor-inline-input flag-input" value="${item.flag || ''}" oninput="editorData.trip.customBadges[${idx}].items[${ii}].flag=this.value" placeholder="🏳️">
+        <input class="editor-inline-input flag-input" value="${item.flag || ''}" oninput="editorData.trip.customBadges[${idx}].items[${ii}].flag=this.value" placeholder="XX">
         <input class="editor-inline-input" style="flex:1" value="${escHtml(item.title || '')}" oninput="editorData.trip.customBadges[${idx}].items[${ii}].title=this.value" placeholder="${t('ed.title')}">
         <input class="editor-inline-input" style="flex:2" value="${escHtml(item.file || '')}" oninput="editorData.trip.customBadges[${idx}].items[${ii}].file=this.value" placeholder="folder/file.pdf">
         <button class="editor-remove-btn" onclick="editorData.trip.customBadges[${idx}].items.splice(${ii},1);refreshSection('badges')">✕</button>
@@ -802,7 +802,7 @@ function renderCustomBadgeEditor(b, idx) {
 
   return `<div class="editor-badge-item">
     <div class="editor-badge-header">
-      <input class="editor-inline-input" style="width:40px;text-align:center;font-size:1rem" value="${b.icon || ''}" oninput="editorData.trip.customBadges[${idx}].icon=this.value" placeholder="📌">
+      <input class="editor-inline-input" style="width:40px;text-align:center;font-size:1rem" value="${b.icon || ''}" oninput="editorData.trip.customBadges[${idx}].icon=this.value" placeholder="icon">
       <input class="editor-inline-input" style="flex:1;font-weight:600" value="${escHtml(b.label || '')}" oninput="editorData.trip.customBadges[${idx}].label=this.value" placeholder="${t('ed.badgeName')}">
       <button class="editor-remove-btn" onclick="editorData.trip.customBadges.splice(${idx},1);refreshSection('badges')">✕</button>
     </div>
@@ -850,7 +850,7 @@ function edAddCustoms() {
 }
 function edAddCustomBadge() {
   editorData.trip.customBadges = editorData.trip.customBadges || [];
-  editorData.trip.customBadges.push({ icon: '📌', label: '', borderColor: '#32333f', type: 'multi', items: [] });
+  editorData.trip.customBadges.push({ icon: '', label: '', borderColor: '#32333f', type: 'multi', items: [] });
   refreshSection('badges');
 }
 
@@ -864,7 +864,7 @@ function renderDaysSection() {
   <div class="editor-section${disabled ? ' editor-section-disabled' : ''}">
     <div class="editor-section-header" onclick="${disabled ? '' : 'toggleEditorSection(this)'}" ${disabled ? `title="${t('ed.routeRequired')}"` : ''}>
       <span class="editor-section-chevron">▶</span>
-      <span class="editor-section-title">${t('ed.days')}</span>
+      <span class="editor-section-title">${icon('calendar',14)} ${t('ed.days')}</span>
       <span class="editor-section-badge">${days.length} ${t('sub.days')}</span>
       ${disabled ? `<span class="editor-section-hint">${t('ed.defineRouteFirst')}</span>` : ''}
     </div>
@@ -881,7 +881,7 @@ function renderDaysSection() {
 }
 
 function renderDayItem(day, idx) {
-  let cityPart = `${day.flag || ''} ${day.city || t('ed.unknownCity')}`;
+  let cityPart = `${FLAG_TO_COUNTRY[day.flag] ? FLAG_TO_COUNTRY[day.flag].substring(0,2).toUpperCase() : ''} ${day.city || t('ed.unknownCity')}`;
   if (day.dayTrip && day.parentCity) cityPart += ` \u2190 ${day.parentCity}`;
   const label = `${day.date || t('ed.newDay')} \u00B7 ${cityPart}`;
   const cardCount = (day.cards || []).length;
@@ -911,8 +911,8 @@ function renderDayFields(day, idx) {
   // Build card type select options (including custom types)
   const allTypes = getCardTypesWithCustom();
   const typeOptions = allTypes.map(g =>
-    `<optgroup label="${g.group}">${g.items.map(ti => `<option value="${ti.value}">${ti.icon} ${ti.label}</option>`).join('')}</optgroup>`
-  ).join('') + `<option value="__custom__">\u270F\uFE0F ${t('ed.customOpt')}</option>`;
+    `<optgroup label="${g.group}">${g.items.map(ti => `<option value="${ti.value}">${ti.label}</option>`).join('')}</optgroup>`
+  ).join('') + `<option value="__custom__">${t('ed.customOpt')}</option>`;
 
   // Build city select options from route
   const routeCities = getRouteCities();
@@ -922,7 +922,7 @@ function renderDayFields(day, idx) {
   let cityOptions = routeCities.map(rc => {
     const key = rc.flag + '::' + rc.city;
     const sel = selectedKey === key ? ' selected' : '';
-    return `<option value="${escHtml(key)}"${sel} data-color="${rc.color}">${rc.flag} ${escHtml(rc.city)}</option>`;
+    return `<option value="${escHtml(key)}"${sel} data-color="${rc.color}">${rc.flag.toUpperCase()} · ${escHtml(rc.city)}</option>`;
   }).join('');
   // Show orphaned city if not in route
   if (selectedCity && !routeCities.find(c => c.flag === selectedFlag && c.city === selectedCity)) {
@@ -960,16 +960,17 @@ function renderDayFields(day, idx) {
   // ── Food ──
   html += `<div class="editor-subsection">
     <div class="editor-subsection-header">
-      <span class="editor-subsection-title">${t('ed.foodTips')}</span>
+      <span class="editor-subsection-title">${icon('utensils',13)} ${t('ed.foodTips')}</span>
       <span class="editor-subsection-count">${(day.food || []).length}</span>
     </div>`;
   (day.food || []).forEach((f, fi) => {
-    const foodEmojiOpts = EMOJI_PALETTES.food.map(e => `<option value="${e}" ${f.e === e ? 'selected' : ''}>${e}</option>`).join('');
+    const foodIconOpts = FOOD_ICONS.map(fi2 => `<option value="${fi2.key}" ${f.e === fi2.key ? 'selected' : ''}>${fi2.label}</option>`).join('');
+    const isCustomFood = f.e && !FOOD_ICONS.some(fi2 => fi2.key === f.e) && !ICON_PATHS[f.e];
     html += `<div class="editor-food-row">
       <select class="editor-emoji-select" onchange="edEmojiSelect(this,'editorData.days[${idx}].food[${fi}].e',${idx})">
         <option value="">---</option>
-        ${foodEmojiOpts}
-        <option value="__custom__" ${f.e && !EMOJI_PALETTES.food.includes(f.e) ? 'selected' : ''}>${f.e && !EMOJI_PALETTES.food.includes(f.e) ? f.e + ' ' : ''}${t('ed.customOpt')}</option>
+        ${foodIconOpts}
+        <option value="__custom__" ${isCustomFood ? 'selected' : ''}>${isCustomFood ? f.e + ' ' : ''}${t('ed.customOpt')}</option>
       </select>
       <div style="flex:1;display:flex;flex-direction:column;gap:4px">
         <input class="editor-inline-input" value="${escHtml(f.dish || '')}" oninput="editorData.days[${idx}].food[${fi}].dish=this.value" placeholder="${t('ed.dishName')}">
@@ -984,7 +985,7 @@ function renderDayFields(day, idx) {
   // ── Files ──
   html += `<div class="editor-subsection">
     <div class="editor-subsection-header">
-      <span class="editor-subsection-title">${t('ed.files')}</span>
+      <span class="editor-subsection-title">${icon('paperclip',13)} ${t('ed.files')}</span>
       <span class="editor-subsection-count">${(day.files || []).length}</span>
     </div>`;
   (day.files || []).forEach((f, fi) => {
@@ -993,7 +994,7 @@ function renderDayFields(day, idx) {
       <select class="editor-inline-input" style="width:110px" onchange="editorData.days[${idx}].files[${fi}].cat=this.value">${catOpts}</select>
       <input class="editor-inline-input" style="flex:2" value="${escHtml(f.name || '')}" oninput="editorData.days[${idx}].files[${fi}].name=this.value" placeholder="${t('ed.filename')}">
       <input class="editor-inline-input" style="flex:2" value="${escHtml(f.label || '')}" oninput="editorData.days[${idx}].files[${fi}].label=this.value" placeholder="${t('ed.displayLabel')}">
-      <button class="editor-add-btn" style="margin:0;padding:4px 8px;font-size:0.7rem" onclick="edPickFile(${idx},${fi})">📁</button>
+      <button class="editor-add-btn" style="margin:0;padding:4px 8px;font-size:0.7rem" onclick="edPickFile(${idx},${fi})">${icon('folder',12)}</button>
       <button class="editor-remove-btn" onclick="editorData.days[${idx}].files.splice(${fi},1);refreshDayBody(${idx})">✕</button>
     </div>`;
   });
@@ -1003,7 +1004,7 @@ function renderDayFields(day, idx) {
   // ── Cards ──
   html += `<div class="editor-subsection">
     <div class="editor-subsection-header">
-      <span class="editor-subsection-title">${t('ed.cardsSection')}</span>
+      <span class="editor-subsection-title">${icon('clipboard',13)} ${t('ed.cardsSection')}</span>
       <span class="editor-subsection-count">${(day.cards || []).length}</span>
     </div>`;
 
@@ -1015,7 +1016,7 @@ function renderDayFields(day, idx) {
     html += `<div class="editor-card-item" style="border-left-color:${meta.color}" id="ed-card-${idx}-${ci}">
       <div class="editor-card-header" onclick="toggleEditorCard(this)">
         <span class="editor-card-chevron">▶</span>
-        <span class="editor-card-icon">${c.icon || CARD_TYPE_ICONS[c.type] || '📌'}</span>
+        <span class="editor-card-icon">${cardIcon(c, 16)}</span>
         <span class="editor-card-title">${escHtml(cardLabel)}</span>
         <span class="editor-card-type-badge">${meta.label}</span>
         <div class="editor-card-actions" onclick="event.stopPropagation()">
@@ -1056,13 +1057,13 @@ function renderCardFields(c, dayIdx, cardIdx, typeOptions) {
     if (tp.length > 1 && tp[1].trim()) { timeEnd = tp[1].trim(); hasEnd = true; }
   }
 
-  // Determine icon category for emoji picker
+  // Determine icon category for SVG icon picker
   const iconCategory = isTransport ? 'transport'
     : ['stay','checkout'].includes(c.type) ? 'stay'
     : 'place';
-  const iconPalette = EMOJI_PALETTES[iconCategory] || EMOJI_PALETTES.activity;
-  const iconOpts = iconPalette.map(e => `<option value="${e}" ${c.icon === e ? 'selected' : ''}>${e}</option>`).join('');
-  const isCustomIcon = c.icon && !iconPalette.includes(c.icon);
+  const iconPalette = SVG_PALETTES[iconCategory] || SVG_PALETTES.place;
+  const iconOpts = iconPalette.map(key => `<option value="${key}" ${c.icon === key ? 'selected' : ''}>${key}</option>`).join('');
+  const isCustomIcon = c.icon && !iconPalette.includes(c.icon) && !ICON_PATHS[c.icon];
 
   let html = `
     <div class="editor-row">
@@ -1113,10 +1114,10 @@ function renderCardFields(c, dayIdx, cardIdx, typeOptions) {
       <input class="editor-input" value="${escHtml(c.city || '')}" oninput="${prefix}.city=this.value" placeholder="${t('ed.cityOverrideHint')}">
     </div>` : ''}
     ${isTransport ? `<div class="editor-row">
-      ${edLocField(dayIdx, cardIdx, 'mapsFrom', c.mapsFrom, '📍', t('ed.mapsDeparture'), t('ed.mapsDepartureHint'), c.from || '')}
-      ${edLocField(dayIdx, cardIdx, 'mapsTo', c.mapsTo, '🏁', t('ed.mapsArrival'), t('ed.mapsArrivalHint'), c.to || '')}
+      ${edLocField(dayIdx, cardIdx, 'mapsFrom', c.mapsFrom, icon('map-pin',13), t('ed.mapsDeparture'), t('ed.mapsDepartureHint'), c.from || '')}
+      ${edLocField(dayIdx, cardIdx, 'mapsTo', c.mapsTo, icon('flag',13), t('ed.mapsArrival'), t('ed.mapsArrivalHint'), c.to || '')}
     </div>` : `<div class="editor-row">
-      ${edLocField(dayIdx, cardIdx, 'maps', c.maps, '📍', t('ed.mapsAddress'), t('ed.mapsHint'), c.title || '')}
+      ${edLocField(dayIdx, cardIdx, 'maps', c.maps, icon('map-pin',13), t('ed.mapsAddress'), t('ed.mapsHint'), c.title || '')}
     </div>`}
     <div class="editor-row">
       <div class="editor-field"><label class="editor-label">${t('ed.phone')}</label><input class="editor-input" value="${escHtml(c.phone || '')}" oninput="${prefix}.phone=this.value" placeholder="+81351557111"></div>
@@ -1224,7 +1225,7 @@ function edAddCard(dayIdx) {
   const day = editorData.days[dayIdx];
   day.cards = day.cards || [];
   day.cards.push({
-    time: '', type: 'activity', icon: '🎯', title: '',
+    time: '', type: 'activity', icon: 'target', title: '',
     sub: '', tags: [], tips: []
   });
   refreshDayBody(dayIdx);
@@ -1330,18 +1331,18 @@ function edSelectCardType(dayIdx, cardIdx, value) {
   if (value === '__custom__') {
     const label = prompt(t('ed.enterTypeName'));
     if (!label || !label.trim()) return;
-    const icon = prompt(t('ed.enterTypeIcon')) || '📌';
+    const customIcon = prompt(t('ed.enterTypeIcon')) || '\ud83d\udccc';
     const typeValue = 'custom_' + label.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
     // Store in customTypes
     editorData.trip.customTypes = editorData.trip.customTypes || [];
     if (!editorData.trip.customTypes.find(ct => ct.value === typeValue)) {
-      editorData.trip.customTypes.push({ value: typeValue, label: label.trim(), icon: icon.trim() });
+      editorData.trip.customTypes.push({ value: typeValue, label: label.trim(), icon: customIcon.trim() });
       // Register in TYPE_META and CARD_TYPE_ICONS
       TYPE_META[typeValue] = { color: 'var(--activity-c)', label: label.trim() };
-      CARD_TYPE_ICONS[typeValue] = icon.trim();
+      CARD_TYPE_ICONS[typeValue] = customIcon.trim();
     }
     card.type = typeValue;
-    card.icon = icon.trim();
+    card.icon = customIcon.trim();
   } else {
     card.type = value;
     card.icon = CARD_TYPE_ICONS[value] || card.icon;
@@ -1500,8 +1501,8 @@ function refreshCardBody(dayIdx, cardIdx) {
   const card = editorData.days[dayIdx].cards[cardIdx];
   const allTypes = getCardTypesWithCustom();
   const typeOptions = allTypes.map(g =>
-    `<optgroup label="${g.group}">${g.items.map(ti => `<option value="${ti.value}">${ti.icon} ${ti.label}</option>`).join('')}</optgroup>`
-  ).join('') + `<option value="__custom__">\u270F\uFE0F ${t('ed.customOpt')}</option>`;
+    `<optgroup label="${g.group}">${g.items.map(ti => `<option value="${ti.value}">${ti.label}</option>`).join('')}</optgroup>`
+  ).join('') + `<option value="__custom__">${t('ed.customOpt')}</option>`;
   body.innerHTML = renderCardFields(card, dayIdx, cardIdx, typeOptions);
 }
 
@@ -1517,7 +1518,7 @@ function toggleEditorCard(header) {
 
 // ─── Location search field helpers ───
 
-function edLocField(dayIdx, cardIdx, field, val, icon, label, hint, suggestQuery) {
+function edLocField(dayIdx, cardIdx, field, val, locIcon, label, hint, suggestQuery) {
   const qId = `loc-q-${field}-${dayIdx}-${cardIdx}`;
   const rId = `loc-r-${field}-${dayIdx}-${cardIdx}`;
   const hasVal = val && typeof val === 'object' && val.lat;
@@ -1533,14 +1534,14 @@ function edLocField(dayIdx, cardIdx, field, val, icon, label, hint, suggestQuery
     : '';
 
   return `<div class="editor-field">
-    <label class="editor-label">${icon} ${label}</label>
+    <label class="editor-label">${locIcon} ${label}</label>
     <div class="editor-loc-wrap" id="loc-${field}-${dayIdx}-${cardIdx}">
       ${currentHTML}
       <div class="editor-loc-input-row">
         <input class="editor-input editor-loc-query" id="${qId}"
           value="${escHtml(defaultSearch)}" placeholder="${hint}"
           onkeydown="if(event.key==='Enter'){event.preventDefault();edSearchLocation(${dayIdx},${cardIdx},'${field}',this.value)}">
-        <button class="editor-loc-search-btn" onclick="edSearchLocation(${dayIdx},${cardIdx},'${field}',document.getElementById('${qId}').value)" title="${t('ed.locSearch')}">🔍</button>
+        <button class="editor-loc-search-btn" onclick="edSearchLocation(${dayIdx},${cardIdx},'${field}',document.getElementById('${qId}').value)" title="${t('ed.locSearch')}">${icon('search',14)}</button>
       </div>
       <div class="editor-loc-results" id="${rId}"></div>
     </div>
