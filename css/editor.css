@@ -32,8 +32,9 @@
 }
 .editor-toolbar-icon { font-size: 1.2rem; }
 .editor-toolbar-title {
-  font-family: 'Georgia', 'Times New Roman', serif;
   font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
   color: #fff;
 }
 .editor-toolbar-right {
