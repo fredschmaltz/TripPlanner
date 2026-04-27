@@ -47,7 +47,7 @@ function renderHeader() {
     badgesHTML += '</span>';
   }
   if (trip.customs) {
-    badgesHTML += `<span class="esim-badge" style="border-color:#8a6020;gap:6px">${icon('passport',14)} ${trip.customs.label}`;
+    badgesHTML += `<span class="esim-badge customs-badge" style="gap:6px">${icon('passport',14)} ${trip.customs.label}`;
     (trip.customs.documents || []).forEach(doc => {
       badgesHTML += `<a href="#" onclick="return openDoc('${doc.file.replace(/'/g, "\\'")}', event)" class="tag tag-country" title="${doc.title}">${countryFlag(doc.flag, 14)}</a>`;
     });
@@ -201,6 +201,78 @@ function applyLegendFilter() {
     const hasVisible = lg.querySelector('.day:not(.legend-hidden):not(.view-hidden):not(.search-hidden)');
     lg.classList.toggle('legend-hidden', !hasVisible);
   });
+
+  // Re-evaluate combined visibility (search + legend)
+  _applyCombinedVisibility();
+}
+
+/**
+ * Unified visibility pass: hide days and location groups where NO card
+ * passes ALL active filters (search-hidden, legend-hidden).
+ * This ensures AND-combination of search + legend filters at the day level.
+ */
+function _applyCombinedVisibility() {
+  const timeline = document.getElementById('timeline');
+  if (!timeline) return;
+
+  const searchActive = _currentSearchQuery.length > 0;
+  const legendActive = _selectedLegendCategories.size > 0;
+  const filtering = searchActive || legendActive;
+
+  // For each day, check if at least one card is visible (not hidden by ANY filter)
+  timeline.querySelectorAll('.day').forEach(dayEl => {
+    const cards = dayEl.querySelectorAll('.card');
+    let anyCardVisible = false;
+    cards.forEach(c => {
+      if (!c.classList.contains('search-hidden') && !c.classList.contains('legend-hidden')) {
+        anyCardVisible = true;
+      }
+    });
+    // Add combined-hidden if no cards pass all filters (only when at least one filter is active)
+    if (filtering) {
+      dayEl.classList.toggle('combined-hidden', !anyCardVisible);
+    } else {
+      dayEl.classList.remove('combined-hidden');
+    }
+
+    // Hide segment dividers whose following cards are all hidden
+    _hideEmptySegmentDividers(dayEl, filtering);
+  });
+
+  // Hide location groups with no visible days
+  timeline.querySelectorAll('.location-group').forEach(lg => {
+    const hasVisible = lg.querySelector('.day:not(.combined-hidden):not(.view-hidden):not(.search-hidden):not(.legend-hidden)');
+    lg.classList.toggle('combined-hidden', !hasVisible);
+  });
+}
+
+/**
+ * Hide segment-divider elements (city sub-headers inside a day) when no
+ * visible cards follow them before the next divider or end of container.
+ */
+function _hideEmptySegmentDividers(dayEl, filtering) {
+  const cardsContainer = dayEl.querySelector('.cards');
+  if (!cardsContainer) return;
+  const children = Array.from(cardsContainer.children);
+  // Walk dividers: for each, check if at least one following card (before the next divider) is visible
+  for (let i = 0; i < children.length; i++) {
+    const el = children[i];
+    if (!el.classList.contains('segment-divider')) continue;
+    let hasVisibleCard = false;
+    for (let j = i + 1; j < children.length; j++) {
+      if (children[j].classList.contains('segment-divider')) break;
+      if (children[j].classList.contains('card')) {
+        const hidden = children[j].classList.contains('search-hidden') ||
+                       children[j].classList.contains('legend-hidden');
+        if (!hidden) { hasVisibleCard = true; break; }
+      }
+    }
+    if (filtering) {
+      el.classList.toggle('combined-hidden', !hasVisibleCard);
+    } else {
+      el.classList.remove('combined-hidden');
+    }
+  }
 }
 
 // ─── Render Card ───
@@ -1050,7 +1122,14 @@ function applyTimelineSearch(query) {
     lg.classList.toggle('search-hidden', !hasVisible);
   });
 
-  if (noResults) noResults.classList.toggle('hidden', anyMatch);
+  // Re-evaluate combined visibility (search + legend)
+  _applyCombinedVisibility();
+
+  if (noResults) {
+    // Check if ANY card is truly visible (passes all filters)
+    const anyTrulyVisible = !!timeline.querySelector('.card:not(.search-hidden):not(.legend-hidden)');
+    noResults.classList.toggle('hidden', anyTrulyVisible);
+  }
 }
 
 /** Walk text nodes inside an element and wrap matching substrings with <mark> */
@@ -1102,10 +1181,70 @@ const PAGE_SIZE = 5; // days per page in 'paged' mode
 function setViewMode(mode) {
   currentViewMode = mode;
   currentPage = 0;
+
+  // Smart jump for byDay: land on today's date, or closest future date
+  if (mode === 'byDay' && DAYS.length > 0) {
+    currentPage = _findBestDayPage();
+  }
+
   document.querySelectorAll('.view-mode-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.mode === mode)
   );
   applyViewMode();
+}
+
+/**
+ * Parse a display date like "Tue 28 Apr" into a Date object using the trip year.
+ * Returns null if parsing fails.
+ */
+function _parseDayDate(displayDate) {
+  if (!displayDate) return null;
+  const m = displayDate.match(/^\w+\s+(\d+)\s+(\w+)$/);
+  if (!m) return null;
+  const dayNum = parseInt(m[1]);
+  const monthNames = getMonthNames();
+  let monIdx = monthNames.findIndex(mn => mn.toLowerCase() === m[2].toLowerCase());
+  if (monIdx < 0) {
+    const en = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    monIdx = en.findIndex(mn => mn.toLowerCase() === m[2].toLowerCase());
+  }
+  if (monIdx < 0) return null;
+  const year = (TRIP_CONFIG && TRIP_CONFIG.year) ? parseInt(TRIP_CONFIG.year) : new Date().getFullYear();
+  return new Date(year, monIdx, dayNum);
+}
+
+/**
+ * Find the best page index for byDay mode.
+ * - If today matches a day entry, return that index.
+ * - If all entries are in the past, return 0 (page one).
+ * - Otherwise return the index of the earliest future entry.
+ */
+function _findBestDayPage() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let exactIdx = -1;
+  let earliestFutureIdx = -1;
+  let earliestFutureDate = null;
+
+  for (let i = 0; i < DAYS.length; i++) {
+    const d = _parseDayDate(DAYS[i].date);
+    if (!d) continue;
+    d.setHours(0, 0, 0, 0);
+
+    if (d.getTime() === today.getTime()) {
+      exactIdx = i;
+      break;
+    }
+    if (d > today && (earliestFutureDate === null || d < earliestFutureDate)) {
+      earliestFutureDate = d;
+      earliestFutureIdx = i;
+    }
+  }
+
+  if (exactIdx >= 0) return exactIdx;
+  if (earliestFutureIdx >= 0) return earliestFutureIdx;
+  return 0; // all in the past
 }
 
 function viewPrev() {
@@ -1152,7 +1291,7 @@ function applyViewMode() {
       d.classList.toggle('view-hidden', i !== currentPage);
     });
     allGroups.forEach(g => {
-      const hasVisible = g.querySelector('.day:not(.view-hidden):not(.search-hidden)');
+      const hasVisible = g.querySelector('.day:not(.view-hidden):not(.search-hidden):not(.combined-hidden)');
       g.classList.toggle('view-hidden', !hasVisible);
     });
     if (pageLabel) pageLabel.textContent = `${currentPage + 1} ${t('view.pageOf')} ${DAYS.length}`;
@@ -1172,7 +1311,7 @@ function applyViewMode() {
       d.classList.toggle('view-hidden', i < start || i >= end);
     });
     allGroups.forEach(g => {
-      const hasVisible = g.querySelector('.day:not(.view-hidden):not(.search-hidden)');
+      const hasVisible = g.querySelector('.day:not(.view-hidden):not(.search-hidden):not(.combined-hidden)');
       g.classList.toggle('view-hidden', !hasVisible);
     });
     const totalPages = Math.ceil(DAYS.length / PAGE_SIZE);
