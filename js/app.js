@@ -45,4 +45,4 @@ overlay.addEventListener('click', function (e) {
     }
 });
 
-// Safeguard future references corresponding UI \n
+// Safeguard future references corresponding UI 
