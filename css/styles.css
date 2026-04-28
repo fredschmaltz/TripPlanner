@@ -138,7 +138,7 @@ body{font-family:'SF Pro Display',-apple-system,'Segoe UI',system-ui,sans-serif;
 /* ═══════════════════════════════════════════
    HORIZON DAY BLOCK (concept style)
 ═══════════════════════════════════════════ */
-.hz-day{position:relative;padding:0;margin-bottom:3px;overflow:hidden;animation:dayAppear .4s var(--ease) backwards}
+.hz-day{position:relative;padding:0;margin-bottom:3px;animation:dayAppear .4s var(--ease) backwards}
 @keyframes dayAppear{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
 
 .hz-day-header{display:flex;align-items:center;gap:12px;padding:16px 16px 8px;cursor:pointer;-webkit-user-select:none;user-select:none;position:relative;z-index:1}
@@ -198,14 +198,15 @@ button.hz-meta-pill:hover{border-color:rgba(255,255,255,.15);color:var(--text)}
 /* ═══════════════════════════════════════════
    INLINE EXPAND (concept Option A)
 ═══════════════════════════════════════════ */
-.hz-card.expanded{height:auto !important;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12);box-shadow:0 12px 50px rgba(0,0,0,.5);cursor:default;animation:cardExpand .35s var(--ease) forwards;z-index:30;position:relative}
+.hz-card.expanded{height:auto !important;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12);box-shadow:0 12px 50px rgba(0,0,0,.5);cursor:default;animation:cardExpand .35s var(--ease) forwards;z-index:20;position:relative}
 .hz-card.expanded .hz-card-row1{display:none}
 .hz-card.expanded .hz-card-title{display:none}
 .hz-card.expanded .hz-card-sub{display:none}
 .hz-card.expanded .hz-card-tags{display:none}
 .hz-card.expanded .hz-card-tips{display:none}
 .hz-card.expanded .hz-card-route{display:none}
-.journal-entry.expanded{z-index:30;position:relative;background:rgba(255,255,255,.05);box-shadow:0 8px 40px rgba(0,0,0,.5);border-radius:12px;border:1px solid rgba(255,255,255,.12)}
+.journal-entry.expanded{z-index:20;position:relative;background:rgba(255,255,255,.05);box-shadow:0 8px 40px rgba(0,0,0,.5);border-radius:12px;border:1px solid rgba(255,255,255,.12)}
+
 .journal-entry.expanded .journal-entry-collapsed{display:none}
 @keyframes cardExpand{0%{opacity:.9;transform:scale(.98)}100%{opacity:1;transform:scale(1)}}
 
@@ -272,7 +273,7 @@ button.hz-meta-pill:hover{border-color:rgba(255,255,255,.15);color:var(--text)}
 .hz-connector-return .hz-connector-pill{border-style:dashed !important}
 .hz-connector-pill{cursor:pointer;transition:all .3s var(--ease)}
 .hz-connector-pill:hover{transform:scale(1.04);filter:brightness(1.2)}
-.hz-connector.expanded{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px;box-shadow:0 12px 50px rgba(0,0,0,.5);cursor:default;z-index:30;position:relative;animation:cardExpand .35s var(--ease) forwards}
+.hz-connector.expanded{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px;box-shadow:0 12px 50px rgba(0,0,0,.5);cursor:default;z-index:20;position:relative;animation:cardExpand .35s var(--ease) forwards}
 .hz-connector.expanded .hz-connector-pill{display:none}
 .hz-connector.expanded .hz-connector-line-v{display:none}
 .hz-connector .card-expanded{display:none;padding:0}
@@ -295,7 +296,7 @@ button.hz-meta-pill:hover{border-color:rgba(255,255,255,.15);color:var(--text)}
    JOURNAL PAGE (concept style)
 ═══════════════════════════════════════════ */
 .journal-day{margin-bottom:20px;animation:dayAppear .4s var(--ease) backwards}
-.journal-page{background:rgba(255,255,255,.025);-webkit-backdrop-filter:blur(var(--blur-heavy));backdrop-filter:blur(var(--blur-heavy));border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:32px;position:relative;overflow:hidden;cursor:pointer}
+.journal-page{background:rgba(255,255,255,.025);-webkit-backdrop-filter:blur(var(--blur-heavy));backdrop-filter:blur(var(--blur-heavy));border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:32px;position:relative;cursor:pointer}
 .journal-page::before{content:'';position:absolute;top:0;left:40px;bottom:0;width:1px;background:rgba(233,69,96,.12);pointer-events:none}
 .journal-page::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(transparent 0,transparent 31px,rgba(255,255,255,.015) 31px,rgba(255,255,255,.015) 32px);pointer-events:none}
 .journal-page-header{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.05);position:relative}
