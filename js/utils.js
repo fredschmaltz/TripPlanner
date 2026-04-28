@@ -1,585 +1,1472 @@
 /* ══════════════════════════════════════════
-TRIP PLANNER – Shared Utilities
+TRIP PLANNER – Display / Rendering
+Supports two display modes: Horizon (grid mosaic) & Journal (notebook pages)
 ══════════════════════════════════════════ */
 
-// ─── Card type metadata (color + display label) ───
-const TYPE_META = {
-flight:    { color: ‘var(–transport-c)’, label: ‘Flight’ },
-transit:   { color: ‘var(–transport-c)’, label: ‘Train’ },
-bus:       { color: ‘var(–transport-c)’, label: ‘Bus’ },
-ferry:     { color: ‘var(–transport-c)’, label: ‘Ferry’ },
-taxi:      { color: ‘var(–transport-c)’, label: ‘Taxi / Car’ },
-stay:      { color: ‘var(–stay-c)’,      label: ‘Hotel’ },
-checkout:  { color: ‘var(–checkout-c)’,  label: ‘Check-out’ },
-temple:    { color: ‘var(–temple-c)’,    label: ‘Temple / Shrine’ },
-museum:    { color: ‘var(–museum-c)’,    label: ‘Museum’ },
-park:      { color: ‘var(–park-c)’,      label: ‘Park / Garden’ },
-market:    { color: ‘var(–market-c)’,    label: ‘Market’ },
-viewpoint: { color: ‘var(–viewpoint-c)’, label: ‘Viewpoint’ },
-aquarium:  { color: ‘var(–aquarium-c)’,  label: ‘Aquarium’ },
-zoo:       { color: ‘var(–zoo-c)’,       label: ‘Zoo’ },
-street:    { color: ‘var(–street-c)’,    label: ‘Street / District’ },
-nightlife: { color: ‘var(–nightlife-c)’, label: ‘Nightlife / Dining’ },
-monument:  { color: ‘var(–viewpoint-c)’, label: ‘Monument’ },
-activity:  { color: ‘var(–activity-c)’,  label: ‘Activity’ },
+// ─── Map-field helpers ───
+function mapsLabel(m) {
+if (!m) return ‘’;
+return typeof m === ‘string’ ? m : (m.label || `${m.lat}, ${m.lng}`);
+}
+function mapsClick(m) {
+if (!m) return ‘’;
+if (typeof m === ‘string’) return `openMaps('${m.replace(/'/g, "\\'")}')`;
+return `openMaps(${m.lat},${m.lng})`;
+}
+
+// ─── State ───
+let expandedCard = null;
+
+/** Format time string – highlights +1/+2 next-day notation */
+function fmtTime(t) {
+if (!t) return ‘’;
+return t.replace(/+(\d)/, ‘<sup class="time-next-day">+$1</sup>’);
+}
+
+/** Parse time range “09:00 - 11:30” → duration in hours. Returns 0 if not a range. */
+function parseDurationHours(timeStr) {
+if (!timeStr) return 0;
+const m = timeStr.replace(/\s/g, ‘’).match(/(\d{1,2}):(\d{2})[--](\d{1,2}):(\d{2})(?:+(\d))?/);
+if (!m) return 0;
+let dur = ((+m[3] * 60 + +m[4]) - (+m[1] * 60 + +m[2])) + (+m[5] || 0) * 1440;
+if (dur < 0) dur += 1440;
+return dur / 60;
+}
+
+/** Return slot size (1-4) based on activity duration */
+function getSlotSize(timeStr) {
+const h = parseDurationHours(timeStr);
+if (h >= 6) return 4;
+if (h >= 4) return 3;
+if (h >= 2) return 2;
+return 1;
+}
+
+/**
+
+- Smart grid layout: packs cards into a 12-column grid based on duration.
+- Each “slot” = 3 CSS columns. Cards are sized 1-4 slots (3-12 CSS cols).
+- Uses 2D occupancy packing, then proportionally stretches to fill rows.
+- @param {number[]} slotSizes - array of slot sizes (1-4) per card
+- @returns {Array<{col:number, w:number, row:number, h:number}>} placements in 12-col grid
+  */
+  function computeSmartGrid(slotSizes) {
+  const n = slotSizes.length;
+  if (n === 0) return [];
+
+const COLS = 12;
+const cssSizes = slotSizes.map(s => s * 3);
+
+// Single card → full width
+if (n === 1) return [{ col: 0, w: COLS, row: 0, h: 1 }];
+
+// Occupancy grid
+const grid = [];
+const placements = [];
+
+function ensureRow(r) {
+while (grid.length <= r) grid.push(new Array(COLS).fill(false));
+}
+function isFree(r, c, w, h) {
+for (let dr = 0; dr < h; dr++) {
+ensureRow(r + dr);
+for (let dc = 0; dc < w; dc++) {
+if (c + dc >= COLS || grid[r + dr][c + dc]) return false;
+}
+}
+return true;
+}
+function mark(r, c, w, h) {
+for (let dr = 0; dr < h; dr++) {
+ensureRow(r + dr);
+for (let dc = 0; dc < w; dc++) grid[r + dr][c + dc] = true;
+}
+}
+function firstEmpty() {
+for (let r = 0; ; r++) {
+ensureRow(r);
+for (let c = 0; c < COLS; c++) {
+if (!grid[r][c]) return { r, c };
+}
+}
+}
+function availAt(r, c) {
+ensureRow(r);
+let w = 0;
+while (c + w < COLS && !grid[r][c + w]) w++;
+return w;
+}
+
+// Phase 1: 2D occupancy packing
+for (let i = 0; i < n; i++) {
+const S = cssSizes[i];
+const pos = firstEmpty();
+let { r, c } = pos;
+let aw = availAt(r, c);
+
+```
+if (aw >= S) {
+  mark(r, c, S, 1);
+  placements.push({ col: c, w: S, row: r, h: 1 });
+} else if (aw >= 3) {
+  // Reshape: use available width, extend vertically
+  const w = aw;
+  const h = Math.ceil(S / w);
+  if (isFree(r, c, w, h)) {
+    mark(r, c, w, h);
+    placements.push({ col: c, w, row: r, h });
+  } else {
+    // Fallback: start new row at full width
+    for (let rr = r + 1; ; rr++) {
+      if (isFree(rr, 0, Math.min(S, COLS), 1)) {
+        const fw = Math.min(S, COLS);
+        mark(rr, 0, fw, 1);
+        placements.push({ col: 0, w: fw, row: rr, h: 1 });
+        break;
+      }
+    }
+  }
+} else {
+  // No space, find next row
+  for (let rr = r + 1; ; rr++) {
+    ensureRow(rr);
+    const a = availAt(rr, 0);
+    if (a >= S) {
+      mark(rr, 0, S, 1);
+      placements.push({ col: 0, w: S, row: rr, h: 1 });
+      break;
+    } else if (a >= 3) {
+      const w = a, h = Math.ceil(S / w);
+      if (isFree(rr, 0, w, h)) {
+        mark(rr, 0, w, h);
+        placements.push({ col: 0, w, row: rr, h });
+        break;
+      }
+    }
+  }
+}
+```
+
+}
+
+// Phase 2: proportional stretch – fill empty space on each row
+const maxRow = placements.reduce((m, p) => Math.max(m, p.row + p.h - 1), 0);
+for (let r = 0; r <= maxRow; r++) {
+const rowCards = placements.filter(p => p.row === r && p.h === 1).sort((a, b) => a.col - b.col);
+if (rowCards.length === 0) continue;
+
+```
+// Find cols occupied by tall cards spanning this row
+const occupied = new Set();
+for (const p of placements) {
+  if (p.h > 1 && p.row <= r && p.row + p.h > r) {
+    for (let c = p.col; c < p.col + p.w; c++) occupied.add(c);
+  }
+}
+
+const availWidth = COLS - occupied.size;
+const totalUsed = rowCards.reduce((s, p) => s + p.w, 0);
+if (totalUsed >= availWidth) continue;
+
+// Proportionally redistribute among h=1 cards
+const scale = availWidth / totalUsed;
+let col = 0;
+while (occupied.has(col) && col < COLS) col++;
+
+for (let j = 0; j < rowCards.length; j++) {
+  const p = rowCards[j];
+  let newW;
+  if (j === rowCards.length - 1) {
+    let rem = 0;
+    for (let c = col; c < COLS; c++) if (!occupied.has(c)) rem++;
+    newW = rem;
+  } else {
+    newW = Math.round(p.w * scale);
+    newW = Math.max(newW, 3);
+  }
+  p.col = col;
+  p.w = newW;
+  col += newW;
+  while (occupied.has(col) && col < COLS) col++;
+}
+```
+
+}
+
+return placements;
+}
+
+/** Parse “Thu 30 Apr” → { num: “30”, text: “Thu · Apr” } */
+function parseDateParts(dateStr) {
+if (!dateStr) return { num: ‘?’, text: ‘’ };
+const m = dateStr.match(/^(\w+)\s+(\d+)\s+(\w+)$/);
+if (!m) return { num: dateStr.replace(/\D/g, ‘’) || ‘?’, text: dateStr };
+return { num: m[2], text: `${m[1]} \u00B7 ${m[3]}` };
+}
+
+// ══════════════════════════════════════════
+//  HEADER
+// ══════════════════════════════════════════
+
+function renderHeader() {
+const mode = (typeof currentDisplayMode !== ‘undefined’) ? currentDisplayMode : ‘horizon’;
+if (mode === ‘journal’) return renderJournalHeader();
+return renderHorizonHeader();
+}
+
+function renderHorizonHeader() {
+const header = document.getElementById(‘trip-header’);
+const trip = TRIP_CONFIG;
+const stats = getTripStats();
+
+const mapBtn = (trip.route && trip.route.length > 1)
+? `<button class="hz-header-map" onclick="toggleTripRouteMap()" title="${t('map.tripRoute')}">${icon('map',16)}</button>`
+: ‘’;
+
+const subtitleHTML = trip.subtitle
+? `<p class="hz-subtitle">${trip.subtitle}</p>` : ‘’;
+
+const statsHTML = ` <div class="hz-stats"> <div class="hz-stat"><span class="hz-stat-val">${stats.days}</span><span class="hz-stat-lbl">${t('header.days')}</span></div> <div class="hz-stat"><span class="hz-stat-val">${stats.budget > 0 ? '€' + stats.budget.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '--'}</span><span class="hz-stat-lbl">${t('header.budget')}</span></div> <div class="hz-stat"><span class="hz-stat-val">${stats.cities}</span><span class="hz-stat-lbl">${t('header.cities')}</span></div> <div class="hz-stat"><span class="hz-stat-val">${stats.countries}</span><span class="hz-stat-lbl">${t('header.countries')}</span></div> </div>`;
+
+const routeHTML = buildRouteHTML(trip);
+const badgesHTML = buildBadgesHTML(trip);
+
+header.className = ‘hz-header’;
+header.innerHTML = ` <div class="hz-header-card"> <div class="hz-header-top"> <div class="hz-header-left"> <h1 class="hz-title">${trip.title || t('display.myTrip')} <em>${trip.year || ''}</em> ${mapBtn}</h1> ${subtitleHTML} </div> ${statsHTML} </div> ${routeHTML} ${badgesHTML} </div>`;
+}
+
+function renderJournalHeader() {
+const header = document.getElementById(‘trip-header’);
+const trip = TRIP_CONFIG;
+const stats = getTripStats();
+
+const mapBtn = (trip.route && trip.route.length > 1)
+? `<button class="hz-header-map" onclick="toggleTripRouteMap()" title="${t('map.tripRoute')}">${icon('map',16)}</button>`
+: ‘’;
+
+// Collect unique countries for stamps
+const countries = new Set();
+for (const day of DAYS) {
+if (day.flag) countries.add(day.flag);
+}
+const stampsHTML = […countries].map(flag => {
+const name = countryName(flag);
+return `<div class="journal-stamp">${countryFlag(flag, 16)} ${name}</div>`;
+}).join(’’);
+
+const subtitleHTML = trip.subtitle
+? `<p class="journal-cover-sub">${trip.subtitle}</p>` : ‘’;
+
+header.className = ‘journal-header’;
+header.innerHTML = ` <div class="journal-cover"> <div class="journal-cover-lines"></div> <div class="journal-cover-margin"></div> <div class="journal-cover-content"> <h1 class="journal-cover-title">${trip.title || t('display.myTrip')} <em>${trip.year || ''}</em> ${mapBtn}</h1> ${subtitleHTML} <div class="journal-cover-stats"> <span>${stats.days} ${t('header.days')}</span> <span>${stats.cities} ${t('header.cities')}</span> <span>${stats.countries} ${t('header.countries')}</span> </div> <div class="journal-stamps">${stampsHTML}</div> </div> </div>`;
+}
+
+/** Build route pills HTML (shared between modes) */
+function buildRouteHTML(trip) {
+if (!trip.route || !trip.route.length) return ‘’;
+return ‘<div class="route-pills">’ +
+trip.route.map((r, i) => {
+const name = countryName(r.flag);
+const flagHtml = countryFlag(r.flag, 14);
+const pill = `<span class="route-pill" title="${name}">${flagHtml} ${r.city || ''}</span>`;
+return i < trip.route.length - 1 ? pill + ‘<span class="route-arrow">\u203A</span>’ : pill;
+}).join(’’) + ‘</div>’;
+}
+
+/** Build header badges HTML (eSIM, insurance, customs, custom) */
+function buildBadgesHTML(trip) {
+let html = ‘<div class="header-badges">’;
+
+if (trip.esim) {
+const esim = trip.esim;
+const onclick = esim.file ? `onclick="return openDoc('${esim.file.replace(/'/g, "\\'")}', event)"` : ‘’;
+html += `<a class="esim-badge" href="#" ${onclick} style="cursor:pointer;text-decoration:none"> ${icon('signal',14)} ${esim.label} ${esim.price ? `<span class="tag tag-price">${esim.price}</span>`: ''} ${esim.status === 'paid' ?`<span class="tag tag-paid">${t(‘display.paid’)}</span>` : ''} </a>`;
+}
+if (trip.insurance) {
+html += `<span class="esim-badge insurance-badge" style="gap:6px">${icon('shield',14)} ${trip.insurance.label}`;
+(trip.insurance.certificates || []).forEach(cert => {
+html += `<a href="#" onclick="return openDoc('${cert.file.replace(/'/g, "\\'")}', event)" class="tag tag-country" title="${cert.title}">${countryFlag(cert.flag, 14)}</a>`;
+});
+html += ‘</span>’;
+}
+if (trip.customs) {
+html += `<span class="esim-badge customs-badge" style="gap:6px">${icon('passport',14)} ${trip.customs.label}`;
+(trip.customs.documents || []).forEach(doc => {
+html += `<a href="#" onclick="return openDoc('${doc.file.replace(/'/g, "\\'")}', event)" class="tag tag-country" title="${doc.title}">${countryFlag(doc.flag, 14)}</a>`;
+});
+html += ‘</span>’;
+}
+if (trip.customBadges && trip.customBadges.length) {
+trip.customBadges.forEach(badge => {
+const bColor = badge.borderColor || ‘var(–border2)’;
+if (badge.type === ‘simple’) {
+const onclick = badge.file ? `onclick="return openDoc('${badge.file.replace(/'/g, "\\'")}', event)"` : ‘’;
+html += `<a class="esim-badge" href="#" ${onclick} style="border-color:${bColor};cursor:pointer;text-decoration:none;gap:6px"> ${badge.icon ? renderIcon(badge.icon,14) : icon('pin',14)} ${badge.label || ''} ${badge.price ? `<span class="tag tag-price">${badge.price}</span>`: ''} ${badge.status === 'paid' ?`<span class="tag tag-paid">${t(‘display.paid’)}</span>` : ''} </a>`;
+} else {
+html += `<span class="esim-badge" style="border-color:${bColor};gap:6px">${badge.icon ? renderIcon(badge.icon,14) : icon('pin',14)} ${badge.label || ''}`;
+(badge.items || []).forEach(item => {
+html += `<a href="#" onclick="return openDoc('${(item.file || '').replace(/'/g, "\\'")}', event)" class="tag tag-country" title="${item.title || ''}">${item.flag ? countryFlag(item.flag, 14) : icon('paperclip',12)}</a>`;
+});
+html += ‘</span>’;
+}
+});
+}
+html += ‘</div>’;
+return html;
+}
+
+// ══════════════════════════════════════════
+//  LEGEND
+// ══════════════════════════════════════════
+
+const TYPE_TO_LEGEND = {
+flight: ‘transport’, transit: ‘transport’, bus: ‘transport’,
+ferry: ‘transport’, taxi: ‘transport’,
+stay: ‘stay’, checkout: ‘stay’,
+temple: ‘temple’, museum: ‘museum’, park: ‘park’,
+market: ‘market’, viewpoint: ‘viewpoint’, monument: ‘viewpoint’,
+nightlife: ‘nightlife’, street: ‘district’,
+aquarium: ‘aquarium’, zoo: ‘zoo’, activity: ‘activity’,
 };
 
-// ─── All card types grouped for the editor dropdown ───
-const CARD_TYPES = [
-{ group: ‘Transport’,      items: [
-{ value: ‘flight’,  label: ‘Flight’,       icon: ‘plane’ },
-{ value: ‘transit’, label: ‘Train’,        icon: ‘train’ },
-{ value: ‘bus’,     label: ‘Bus’,          icon: ‘bus’ },
-{ value: ‘ferry’,   label: ‘Ferry’,        icon: ‘ship’ },
-{ value: ‘taxi’,    label: ‘Taxi / Car’,   icon: ‘car’ },
-]},
-{ group: ‘Accommodation’, items: [
-{ value: ‘stay’,     label: ‘Hotel’,       icon: ‘bed’ },
-{ value: ‘checkout’, label: ‘Check-out’,   icon: ‘key’ },
-]},
-{ group: ‘Attraction’,    items: [
-{ value: ‘temple’,    label: ‘Temple / Shrine’,   icon: ‘torii’ },
-{ value: ‘museum’,    label: ‘Museum’,             icon: ‘columns’ },
-{ value: ‘monument’,  label: ‘Monument’,           icon: ‘castle’ },
-{ value: ‘park’,      label: ‘Park / Garden’,      icon: ‘tree’ },
-{ value: ‘market’,    label: ‘Market’,             icon: ‘shopping-bag’ },
-{ value: ‘viewpoint’, label: ‘Viewpoint’,          icon: ‘tower’ },
-{ value: ‘aquarium’,  label: ‘Aquarium’,           icon: ‘fish’ },
-{ value: ‘zoo’,       label: ‘Zoo’,                icon: ‘paw’ },
-{ value: ‘street’,    label: ‘Street / District’,  icon: ‘buildings’ },
-{ value: ‘nightlife’, label: ‘Nightlife / Dining’, icon: ‘wine’ },
-{ value: ‘activity’,  label: ‘Activity’,           icon: ‘target’ },
-]},
+const LEGEND_ENTRIES = [
+{ key: ‘transport’, color: ‘var(–transport-c)’ },
+{ key: ‘stay’,      color: ‘var(–stay-c)’ },
+{ key: ‘temple’,    color: ‘var(–temple-c)’ },
+{ key: ‘museum’,    color: ‘var(–museum-c)’ },
+{ key: ‘park’,      color: ‘var(–park-c)’ },
+{ key: ‘market’,    color: ‘var(–market-c)’ },
+{ key: ‘viewpoint’, color: ‘var(–viewpoint-c)’ },
+{ key: ‘nightlife’, color: ‘var(–nightlife-c)’ },
+{ key: ‘district’,  color: ‘var(–street-c)’ },
+{ key: ‘aquarium’,  color: ‘var(–aquarium-c)’ },
+{ key: ‘zoo’,       color: ‘var(–zoo-c)’ },
+{ key: ‘activity’,  color: ‘var(–activity-c)’ },
 ];
 
-// Flat lookup for icon defaults per type
-const CARD_TYPE_ICONS = {};
-CARD_TYPES.forEach(g => g.items.forEach(t => { CARD_TYPE_ICONS[t.value] = t.icon; }));
+const _selectedLegendCategories = new Set();
 
-// ─── Custom card types (user-defined, stored in editorData.trip.customTypes) ───
-function getCardTypesWithCustom() {
-const custom = (typeof editorData !== ‘undefined’ && editorData && editorData.trip && editorData.trip.customTypes) || [];
-const groups = CARD_TYPES.map(g => ({ …g, items: […g.items] }));
-if (custom.length > 0) {
-groups.push({ group: t(‘typeGroup.custom’), items: custom.map(ct => ({ value: ct.value, label: ct.label, icon: ct.icon })) });
-}
-return groups;
-}
-
-// ─── Emoji palettes by category ───
-// Legacy palettes kept for backward-compatibility with **custom** path.
-// Default selections now use SVG_PALETTES / FOOD_ICONS (icons.js).
-const EMOJI_PALETTES = {
-food: [
-‘🍣’,‘🍱’,‘🍜’,‘🍝’,‘🍛’,‘🍲’,‘🍤’,‘🍥’,‘🥟’,‘🍙’,‘🍘’,‘🍚’,‘🥗’,‘🥘’,‘🍖’,
-‘🍗’,‘🥩’,‘🥓’,‘🌮’,‘🌯’,‘🥪’,‘🍔’,‘🍟’,‘🍕’,‘🥐’,‘🥖’,‘🥨’,‘🧀’,‘🥚’,‘🍳’,
-‘🥞’,‘🧇’,‘🥯’,‘🍞’,‘🫕’,‘🥫’,‘🍝’,‘🥙’,‘🧆’,‘🥣’,‘🫔’,‘🍡’,‘🍢’,‘🍧’,‘🍨’,
-‘🍩’,‘🍪’,‘🎂’,‘🍰’,‘🧁’,‘🥧’,‘🍫’,‘🍬’,‘🍭’,‘🍮’,‘🍯’,‘🍦’,‘🍿’,‘🥜’,‘🌰’,
-‘🍵’,‘🍶’,‘🍺’,‘🍻’,‘🥂’,‘🍷’,‘🥃’,‘🍸’,‘🍹’,‘🍾’,‘🧃’,‘🥤’,‘☕’,‘🧋’,‘🥛’,
-‘🍼’,‘🫖’,‘🍽️’,‘🥢’,‘🧊’,‘🫙’,
-],
-activity: [
-‘🎯’,‘🏃’,‘🚶’,‘🧗’,‘🏊’,‘🎿’,‘🏄’,‘🚴’,‘🛶’,‘⛷️’,‘🪂’,‘🤿’,‘🏇’,‘⛳’,‘🎣’,
-‘🎭’,‘🎪’,‘🎨’,‘🎤’,‘🎧’,‘🎬’,‘🎮’,‘🎰’,‘🎳’,‘🎲’,‘♟️’,‘🧩’,‘🎴’,‘🀄’,
-‘📸’,‘📷’,‘🔭’,‘🧭’,‘🗺️’,‘🏕️’,‘🌅’,‘🌄’,‘🌇’,‘🏞️’,‘🛕’,‘🕍’,‘🕌’,‘⛪’,‘💈’,
-‘🛁’,‘🛒’,‘🎁’,‘💎’,‘🪩’,‘🧘’,‘💆’,‘💇’,‘🛍️’,‘🎠’,‘🎡’,‘🎢’,
-],
-transport: [
-‘✈️’,‘🚄’,‘🚅’,‘🚆’,‘🚇’,‘🚈’,‘🚂’,‘🚃’,‘🚌’,‘🚍’,‘🚎’,‘🚐’,‘🚑’,‘🚒’,
-‘🚓’,‘🚕’,‘🚖’,‘🚗’,‘🚘’,‘🚙’,‘🛻’,‘🚛’,‘🚜’,‘🏎️’,‘🏍️’,‘🛵’,‘🛺’,‘🚲’,
-‘🛴’,‘🛹’,‘🛼’,‘🚁’,‘🛩️’,‘🛸’,‘🚀’,‘🛶’,‘⛵’,‘🚤’,‘⛴️’,‘🛳️’,‘🚢’,‘🚠’,
-‘🚡’,‘🚟’,‘🚃’,‘🚋’,
-],
-stay: [
-‘🏨’,‘🏢’,‘🛏️’,‘🏠’,‘⛺’,‘🏖️’,‘🏡’,‘🏰’,‘🏯’,‘🛖’,‘🏗️’,‘🏘️’,‘🏙️’,‘🏛️’,
-‘🏚️’,‘🪵’,‘⛩️’,‘🕌’,‘💒’,‘🏤’,‘🏥’,
-],
-place: [
-‘⛩️’,‘🏛️’,‘🏯’,‘🌳’,‘🛍️’,‘🗼’,‘🐋’,‘🐼’,‘🏘️’,‘🍻’,‘🎯’,‘🌸’,‘🗻’,‘🌊’,
-‘🏖️’,‘🏝️’,‘🏔️’,‘🌋’,‘🗽’,‘🗿’,‘🏟️’,‘⛲’,‘🌉’,‘🎡’,‘🎢’,‘🎠’,‘⛪’,‘🕍’,
-‘🕌’,‘💒’,‘🏪’,‘🏬’,‘🏣’,‘🏤’,‘🏥’,‘🏦’,‘🏫’,‘🏰’,‘🪨’,‘🌺’,‘🦋’,‘🐠’,
-],
-};
-
-// ─── Stay sub-types (for icon hints) ───
-const STAY_SUBTYPES = [
-{ value: ‘hotel’,     label: ‘Hotel’,     icon: ‘bed’ },
-{ value: ‘apartment’, label: ‘Apartment’, icon: ‘skyline’ },
-{ value: ‘hostel’,    label: ‘Hostel’,    icon: ‘bed’ },
-{ value: ‘airbnb’,    label: ‘Airbnb’,    icon: ‘buildings’ },
-{ value: ‘camping’,   label: ‘Camping’,   icon: ‘tree’ },
-{ value: ‘resort’,    label: ‘Resort’,    icon: ‘waves’ },
-{ value: ‘guesthouse’, label: ‘Guesthouse’, icon: ‘buildings’ },
-];
-
-// ─── Country flag list (ISO 3166-1 alpha-2 codes) ───
-const COUNTRY_FLAGS = [
-{ flag: ‘af’, name: ‘Afghanistan’ }, { flag: ‘al’, name: ‘Albania’ }, { flag: ‘dz’, name: ‘Algeria’ },
-{ flag: ‘ar’, name: ‘Argentina’ }, { flag: ‘au’, name: ‘Australia’ }, { flag: ‘at’, name: ‘Austria’ },
-{ flag: ‘be’, name: ‘Belgium’ }, { flag: ‘br’, name: ‘Brazil’ }, { flag: ‘bg’, name: ‘Bulgaria’ },
-{ flag: ‘kh’, name: ‘Cambodia’ }, { flag: ‘ca’, name: ‘Canada’ }, { flag: ‘cl’, name: ‘Chile’ },
-{ flag: ‘cn’, name: ‘China’ }, { flag: ‘co’, name: ‘Colombia’ }, { flag: ‘hr’, name: ‘Croatia’ },
-{ flag: ‘cu’, name: ‘Cuba’ }, { flag: ‘cz’, name: ‘Czechia’ }, { flag: ‘dk’, name: ‘Denmark’ },
-{ flag: ‘eg’, name: ‘Egypt’ }, { flag: ‘ee’, name: ‘Estonia’ }, { flag: ‘fi’, name: ‘Finland’ },
-{ flag: ‘fr’, name: ‘France’ }, { flag: ‘de’, name: ‘Germany’ }, { flag: ‘gr’, name: ‘Greece’ },
-{ flag: ‘hk’, name: ‘Hong Kong’ }, { flag: ‘hu’, name: ‘Hungary’ }, { flag: ‘is’, name: ‘Iceland’ },
-{ flag: ‘in’, name: ‘India’ }, { flag: ‘id’, name: ‘Indonesia’ }, { flag: ‘ie’, name: ‘Ireland’ },
-{ flag: ‘il’, name: ‘Israel’ }, { flag: ‘it’, name: ‘Italy’ }, { flag: ‘jp’, name: ‘Japan’ },
-{ flag: ‘jo’, name: ‘Jordan’ }, { flag: ‘ke’, name: ‘Kenya’ }, { flag: ‘kr’, name: ‘South Korea’ },
-{ flag: ‘lv’, name: ‘Latvia’ }, { flag: ‘lt’, name: ‘Lithuania’ }, { flag: ‘my’, name: ‘Malaysia’ },
-{ flag: ‘mx’, name: ‘Mexico’ }, { flag: ‘ma’, name: ‘Morocco’ }, { flag: ‘mm’, name: ‘Myanmar’ },
-{ flag: ‘nl’, name: ‘Netherlands’ }, { flag: ‘nz’, name: ‘New Zealand’ }, { flag: ‘ng’, name: ‘Nigeria’ },
-{ flag: ‘no’, name: ‘Norway’ }, { flag: ‘pk’, name: ‘Pakistan’ }, { flag: ‘pe’, name: ‘Peru’ },
-{ flag: ‘ph’, name: ‘Philippines’ }, { flag: ‘pl’, name: ‘Poland’ }, { flag: ‘pt’, name: ‘Portugal’ },
-{ flag: ‘ro’, name: ‘Romania’ }, { flag: ‘ru’, name: ‘Russia’ }, { flag: ‘sa’, name: ‘Saudi Arabia’ },
-{ flag: ‘sg’, name: ‘Singapore’ }, { flag: ‘sk’, name: ‘Slovakia’ }, { flag: ‘si’, name: ‘Slovenia’ },
-{ flag: ‘za’, name: ‘South Africa’ }, { flag: ‘es’, name: ‘Spain’ }, { flag: ‘lk’, name: ‘Sri Lanka’ },
-{ flag: ‘se’, name: ‘Sweden’ }, { flag: ‘ch’, name: ‘Switzerland’ }, { flag: ‘tw’, name: ‘Taiwan’ },
-{ flag: ‘th’, name: ‘Thailand’ }, { flag: ‘tr’, name: ‘Turkey’ }, { flag: ‘ua’, name: ‘Ukraine’ },
-{ flag: ‘ae’, name: ‘UAE’ }, { flag: ‘gb’, name: ‘United Kingdom’ }, { flag: ‘us’, name: ‘United States’ },
-{ flag: ‘vn’, name: ‘Vietnam’ },
-];
-
-// Map ISO code to country name (flag field IS the ISO code now)
-const FLAG_TO_COUNTRY = {};
-COUNTRY_FLAGS.forEach(c => { FLAG_TO_COUNTRY[c.flag] = c.name; });
-
-// FLAG_TO_ISO: identity mapping (flag = ISO code). Kept for API calls.
-const FLAG_TO_ISO = {};
-COUNTRY_FLAGS.forEach(c => { FLAG_TO_ISO[c.flag] = c.flag; });
-// Reverse: ISO code → flag (identity)
-const ISO_TO_FLAG = {};
-COUNTRY_FLAGS.forEach(c => { ISO_TO_FLAG[c.flag] = c.flag; });
-
-// Map country ISO code to color palette (primary, secondary, tertiary)
-const COUNTRY_FLAG_PALETTES = {
-‘af’: [’#ce1126’, ‘#008000’, ‘#000000’],
-‘al’: [’#002395’, ‘#e60000’, ‘#ffffff’],
-‘dz’: [’#007a5e’, ‘#ffffff’, ‘#ff0000’],
-‘ar’: [’#75aadb’, ‘#ffffff’, ‘#ffcc00’],
-‘au’: [’#00008b’, ‘#ffcd00’, ‘#008000’],
-‘at’: [’#ed2939’, ‘#ffffff’, ‘#000000’],
-‘be’: [’#000000’, ‘#ffcd00’, ‘#ff0000’],
-‘br’: [’#009c3b’, ‘#ffcd00’, ‘#2b8cc4’],
-‘bg’: [’#ffffff’, ‘#00966e’, ‘#d62612’],
-‘kh’: [’#0052cc’, ‘#ff0000’, ‘#ffcd00’],
-‘ca’: [’#ff0000’, ‘#ffffff’, ‘#ff6b6b’],
-‘cl’: [’#0039a6’, ‘#ffffff’, ‘#ff0000’],
-‘cn’: [’#de2910’, ‘#ffcd00’, ‘#000000’],
-‘co’: [’#ffcd00’, ‘#0066cc’, ‘#ff0000’],
-‘hr’: [’#171796’, ‘#ffffff’, ‘#f00000’],
-‘cu’: [’#002a8f’, ‘#ffffff’, ‘#ff0000’],
-‘cz’: [’#ffffff’, ‘#ff0000’, ‘#11006e’],
-‘dk’: [’#c8102e’, ‘#ffffff’, ‘#000000’],
-‘eg’: [’#ce1126’, ‘#ffffff’, ‘#000000’],
-‘ee’: [’#4891d9’, ‘#000000’, ‘#ffffff’],
-‘fi’: [’#003580’, ‘#ffffff’, ‘#ffcd00’],
-‘fr’: [’#002395’, ‘#ffffff’, ‘#ff0000’],
-‘de’: [’#000000’, ‘#ff0000’, ‘#ffcd00’],
-‘gr’: [’#0d47a1’, ‘#ffffff’, ‘#1976d2’],
-‘hk’: [’#de2910’, ‘#ffffff’, ‘#000000’],
-‘hu’: [’#004b87’, ‘#ffffff’, ‘#00aa00’],
-‘is’: [’#0052cc’, ‘#ffffff’, ‘#ff0000’],
-‘in’: [’#ff9933’, ‘#ffffff’, ‘#138808’],
-‘id’: [’#ff0000’, ‘#ffffff’, ‘#000000’],
-‘ie’: [’#009543’, ‘#ffffff’, ‘#ff9e1b’],
-‘il’: [’#0038b8’, ‘#ffffff’, ‘#00aaff’],
-‘it’: [’#009246’, ‘#ffffff’, ‘#ff0000’],
-‘jp’: [’#bc002d’, ‘#ffffff’, ‘#ffcd00’],
-‘jo’: [’#000000’, ‘#ffffff’, ‘#ff0000’],
-‘ke’: [’#000000’, ‘#ffffff’, ‘#ff0000’],
-‘kr’: [’#003478’, ‘#ffffff’, ‘#c60c30’],
-‘lv’: [’#9d2235’, ‘#ffffff’, ‘#ffcd00’],
-‘lt’: [’#ffcc00’, ‘#ffffff’, ‘#c41e3a’],
-‘ma’: [’#ce1126’, ‘#ffffff’, ‘#006c35’],
-‘my’: [’#007a5e’, ‘#ffffff’, ‘#ffcd00’],
-‘mx’: [’#006341’, ‘#ffffff’, ‘#ff0000’],
-‘mm’: [’#ffcc00’, ‘#ffffff’, ‘#00aaff’],
-‘nl’: [’#21468b’, ‘#ffffff’, ‘#ff0000’],
-‘nz’: [’#012169’, ‘#000000’, ‘#ffcd00’],
-‘ng’: [’#008751’, ‘#ffffff’, ‘#ff0000’],
-‘no’: [’#186b48’, ‘#ffffff’, ‘#ff0000’],
-‘pa’: [’#00aaff’, ‘#ff0000’, ‘#ffffff’],
-‘pk’: [’#012169’, ‘#ffffff’, ‘#00aa00’],
-‘pe’: [’#ff0000’, ‘#ffffff’, ‘#ffcd00’],
-‘ph’: [’#0066ff’, ‘#ffffff’, ‘#ffcc00’],
-‘pl’: [’#ffffff’, ‘#ff0000’, ‘#000000’],
-‘pt’: [’#006600’, ‘#ff0000’, ‘#ffcd00’],
-‘ro’: [’#002395’, ‘#ffcd00’, ‘#ff0000’],
-‘ru’: [’#ffffff’, ‘#0039a6’, ‘#ff0000’],
-‘sa’: [’#006c35’, ‘#ffffff’, ‘#000000’],
-‘sg’: [’#ffffff’, ‘#ff0000’, ‘#000000’],
-‘sk’: [’#ffffff’, ‘#0052cc’, ‘#ff0000’],
-‘si’: [’#ffffff’, ‘#0052cc’, ‘#ff0000’],
-‘za’: [’#000000’, ‘#ff0000’, ‘#007a5e’],
-‘es’: [’#ffc400’, ‘#ff0000’, ‘#ffffff’],
-‘lk’: [’#0052cc’, ‘#ff9933’, ‘#006b3f’],
-‘se’: [’#0052cc’, ‘#ffcd00’, ‘#000000’],
-‘ch’: [’#ff0000’, ‘#ffffff’, ‘#000000’],
-‘tw’: [’#0052cc’, ‘#ff0000’, ‘#ffcd00’],
-‘th’: [’#2d2d7f’, ‘#ff0000’, ‘#ffffff’],
-‘tr’: [’#ff0000’, ‘#ffffff’, ‘#ffcd00’],
-‘ua’: [’#0052cc’, ‘#ffcd00’, ‘#ff0000’],
-‘ae’: [’#000000’, ‘#ff0000’, ‘#ffffff’],
-‘gb’: [’#012169’, ‘#ffffff’, ‘#c8102e’],
-‘us’: [’#0a3161’, ‘#ffffff’, ‘#ff0000’],
-‘vn’: [’#ce1126’, ‘#ffcd00’, ‘#000000’],
-};
-
-// ─── Known city → color map (auto-populated from data) ───
-const CITY_COLORS = {};
-
-function populateCityColors(days) {
-Object.keys(CITY_COLORS).forEach(k => delete CITY_COLORS[k]);
-for (const day of days || []) {
-if (day.city && day.color) CITY_COLORS[day.city] = day.color;
-if (day.segmentColors) Object.assign(CITY_COLORS, day.segmentColors);
+function renderLegend() {
+const legend = document.getElementById(‘trip-legend’);
+const usedTypes = new Set();
+for (const day of DAYS) {
+for (const card of day.cards || []) {
+if (card.type) usedTypes.add(card.type);
 }
 }
-
-// ─── File categories ───
-const CAT_LABEL  = { activity:‘Activity’, stay:‘Stay’, transport:‘Transportation’, insurance:‘Insurance’, customs:‘Customs’, other:‘Other’ };
-const CAT_FOLDER = { activity:‘Activity’, stay:‘Stay’, transport:‘Transportation’, insurance:‘Insurance’, customs:‘Customs’, other:‘Other’ };
-
-// ─── Tag types ───
-const TAG_TYPES = [
-{ value: ‘price’,   label: ‘Price’ },
-{ value: ‘paid’,    label: ‘Paid’ },
-{ value: ‘unpaid’,  label: ‘Unpaid’ },
-{ value: ‘waiting’, label: ‘Waiting’ },
-{ value: ‘id’,      label: ‘ID / Ref’ },
-];
-
-// ─── Utility functions ───
-
-function getDayNames() {
-return [t(‘day.sun’), t(‘day.mon’), t(‘day.tue’), t(‘day.wed’), t(‘day.thu’), t(‘day.fri’), t(‘day.sat’)];
+const usedCategories = new Set();
+for (const type of usedTypes) {
+const cat = TYPE_TO_LEGEND[type];
+if (cat) usedCategories.add(cat);
 }
-function getMonthNames() {
-return [t(‘month.jan’), t(‘month.feb’), t(‘month.mar’), t(‘month.apr’), t(‘month.may’), t(‘month.jun’),
-t(‘month.jul’), t(‘month.aug’), t(‘month.sep’), t(‘month.oct’), t(‘month.nov’), t(‘month.dec’)];
+if (usedCategories.size === 0) {
+legend.innerHTML = `<span class="legend-empty">${t('legend.empty')}</span>`;
+return;
+}
+legend.innerHTML = LEGEND_ENTRIES
+.filter(e => usedCategories.has(e.key))
+.map(e => {
+const active = _selectedLegendCategories.has(e.key) ? ’ legend-active’ : ‘’;
+return `<div class="legend-item${active}" data-legend="${e.key}" onclick="toggleLegendFilter('${e.key}')"><div class="legend-dot" style="background:${e.color}"></div>${t('legend.' + e.key)}</div>`;
+}).join(’’);
 }
 
-function parseTags(tagStr) {
-if (!tagStr) return [];
-const items = Array.isArray(tagStr) ? tagStr : tagStr.split(’,’);
-return items.map(t => {
-const [label, cls] = t.trim().split(’|’);
-return { label: label.trim(), cls: (cls || ‘’).trim() };
+function toggleLegendFilter(category) {
+if (_selectedLegendCategories.has(category)) {
+_selectedLegendCategories.delete(category);
+} else {
+_selectedLegendCategories.add(category);
+}
+document.querySelectorAll(’.legend-item’).forEach(el => {
+el.classList.toggle(‘legend-active’, _selectedLegendCategories.has(el.dataset.legend));
+});
+applyLegendFilter();
+}
+
+function applyLegendFilter() {
+const timeline = document.getElementById(‘timeline’);
+if (!timeline) return;
+const active = _selectedLegendCategories;
+const filtering = active.size > 0;
+
+DAYS.forEach((day, di) => {
+const dayEl = timeline.querySelector(`.hz-day[data-day-index="${di}"], .journal-day[data-day-index="${di}"]`);
+if (!dayEl) return;
+let anyVisible = false;
+(day.cards || []).forEach((card, ci) => {
+const cardEl = dayEl.querySelector(`.hz-card[data-card="${ci}"], .journal-entry[data-card="${ci}"]`);
+if (!cardEl) return;
+const cat = TYPE_TO_LEGEND[card.type];
+const show = !filtering || (cat && active.has(cat));
+cardEl.classList.toggle(‘legend-hidden’, !show);
+if (show) anyVisible = true;
+});
+dayEl.classList.toggle(‘legend-hidden’, filtering && !anyVisible);
+});
+
+_applyCombinedVisibility();
+}
+
+function _applyCombinedVisibility() {
+const timeline = document.getElementById(‘timeline’);
+if (!timeline) return;
+const searchActive = _currentSearchQuery.length > 0;
+const legendActive = _selectedLegendCategories.size > 0;
+const filtering = searchActive || legendActive;
+
+timeline.querySelectorAll(’.hz-day, .journal-day’).forEach(dayEl => {
+const cards = dayEl.querySelectorAll(’.hz-card, .journal-entry’);
+let anyCardVisible = false;
+cards.forEach(c => {
+if (!c.classList.contains(‘search-hidden’) && !c.classList.contains(‘legend-hidden’)) {
+anyCardVisible = true;
+}
+});
+if (filtering) {
+dayEl.classList.toggle(‘combined-hidden’, !anyCardVisible);
+} else {
+dayEl.classList.remove(‘combined-hidden’);
+}
 });
 }
 
-function renderTag(t) {
-return `<span class="tag tag-${t.cls || 'price'}">${t.label}</span>`;
-}
+// ══════════════════════════════════════════
+//  CARD RENDERING – Shared Parts
+// ══════════════════════════════════════════
 
-function openMaps(latOrQuery, lng) {
-let target;
-if (typeof latOrQuery === ‘number’ && typeof lng === ‘number’) {
-target = `${latOrQuery},${lng}`;
-} else if (typeof latOrQuery === ‘object’ && latOrQuery && latOrQuery.lat) {
-target = `${latOrQuery.lat},${latOrQuery.lng}`;
-} else {
-target = String(latOrQuery);
-}
-const enc = encodeURIComponent(target);
-const isApple = /iPad|iPhone|Macintosh/.test(navigator.userAgent) && ‘ontouchend’ in document;
-window.open(isApple
-? ‘maps://maps.apple.com/?daddr=’ + enc
-: ‘https://www.google.com/maps/dir/?api=1&destination=’ + enc, ‘_blank’);
-}
-
-function parseAmount(label) {
-const m = label.match(/€\s*([\d,]+.?\d*)/);
-if (m) return parseFloat(m[1].replace(’,’, ‘’));
-return null;
-}
-
-function dayFinancials(day) {
-let paid = 0, unpaid = 0, hasPaid = false, hasUnpaid = false;
-for (const c of day.cards || []) {
+function buildExpandedHTML(c, meta, dayFiles, dayIdx, cardIdx) {
 const tags = parseTags(c.tags);
-const paidTag   = tags.find(t => t.cls === ‘paid’);
-const unpaidTag = tags.find(t => t.cls === ‘unpaid’);
-const priceTag  = tags.find(t => t.cls === ‘price’);
-const amt = priceTag ? parseAmount(priceTag.label) : null;
-if (paidTag && amt !== null)   { paid   += amt; hasPaid   = true; }
-if (unpaidTag && amt !== null) { unpaid += amt; hasUnpaid = true; }
-}
-return { paid, unpaid, hasPaid, hasUnpaid };
+const colorVar = meta.color;
+const cardFiles = (dayFiles || []).filter(f => f.cardType === c.type || f.cardTitle === c.title);
+const isTransport = [‘flight’, ‘transit’, ‘bus’, ‘ferry’, ‘taxi’].includes(c.type);
+
+let expMain = ‘’;
+if (isTransport) {
+expMain = `<div class="exp-route"><div><div class="exp-route-from">${c.from || ''}</div>${c.carrier ? `<div class="exp-route-carrier">${c.carrier}</div>` : ''}</div><div class="exp-route-arr">\u2192</div><div><div class="exp-route-to">${c.to || ''}</div></div></div>`;
+} else if (c.type === ‘stay’) {
+expMain = `<div class="stay-info">${icon('bed',14)} ${c.sub || ''}</div>`;
 }
 
-function countActivities(day) {
-const skip = new Set([‘checkout’, ‘stay’, ‘flight’, ‘transit’]);
-return (day.cards || []).filter(c => !skip.has(c.type)).length;
+let contactsHTML = ‘’;
+if (isTransport && (c.mapsFrom || c.mapsTo)) {
+if (c.mapsFrom) contactsHTML += `<div class="contact-row" onclick="${mapsClick(c.mapsFrom)}"><span class="contact-icon">${icon('map-pin',14)}</span><span class="contact-label">${t('card.departure')}</span><span class="contact-val">${mapsLabel(c.mapsFrom).split(',')[0]}</span></div>`;
+if (c.mapsTo) contactsHTML += `<div class="contact-row" onclick="${mapsClick(c.mapsTo)}"><span class="contact-icon">${icon('flag',14)}</span><span class="contact-label">${t('card.arrival')}</span><span class="contact-val">${mapsLabel(c.mapsTo).split(',')[0]}</span></div>`;
+} else if (c.maps) {
+contactsHTML += `<div class="contact-row" onclick="${mapsClick(c.maps)}"><span class="contact-icon">${icon('map-pin',14)}</span><span class="contact-label">${t('card.map')}</span><span class="contact-val">${mapsLabel(c.maps).split(',')[0]}</span></div>`;
+}
+if (c.phone) contactsHTML += `<a class="contact-row" href="tel:${c.phone}"><span class="contact-icon">${icon('phone',14)}</span><span class="contact-label">${t('card.call')}</span><span class="contact-val">${c.phone}</span></a>`;
+if (c.email) contactsHTML += `<a class="contact-row" href="mailto:${c.email}"><span class="contact-icon">${icon('mail',14)}</span><span class="contact-label">${t('card.email')}</span><span class="contact-val">${c.email}</span></a>`;
+
+const tipsHTML = (c.tips && c.tips.length) ? `<div class="exp-tips"><div class="exp-tips-label">${t('card.tips')}</div>${c.tips.map(tip => `<div class="tip-row"><span class="tip-bullet">\u203A</span><span class="tip-text">${tip}</span></div>`).join('')}</div>` : ‘’;
+
+const filesHTML = cardFiles.length ? `<div class="exp-files"><div class="exp-files-label">${icon('paperclip',12)} ${t('card.documents')}</div><div class="files-grid">${cardFiles.map(renderFileRow).join('')}</div></div>` : ‘’;
+
+const visitedBubbleTitle = c.visited ? t(‘visited.markUndone’) : t(‘visited.markDone’);
+const visitedBubble = (typeof dayIdx === ‘number’ && typeof cardIdx === ‘number’)
+? `<button class="card-visited-bubble${c.visited ? ' active' : ''}" onclick="event.stopPropagation();toggleCardVisited(${dayIdx},${cardIdx})" title="${visitedBubbleTitle}"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5.5L4 7.5L8 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`
+: ‘’;
+const closeXBtn = `<button class="card-close-x" onclick="collapseCard(event)" title="${t('card.close')}">&times;</button>`;
+
+return `<div class="card-expanded"><div class="exp-header"><div class="exp-icon" style="color:${colorVar}">${cardIcon(c, 18)}</div><div class="exp-title-group"><div class="exp-type" style="color:${colorVar}">${meta.label}</div><div class="exp-title">${c.title || ''}</div>${(c.sub && c.type !== 'stay') ? `<div class="exp-sub">${c.sub}</div>`: ''}</div><div class="exp-time">${fmtTime(c.time)}</div>${visitedBubble}${closeXBtn}</div>${expMain}${contactsHTML ?`<div class="exp-contacts">${contactsHTML}</div>`: ''}${filesHTML}${tags.length ?`<div class="exp-tags">${tags.map(renderTag).join(’’)}</div>` : ''}${tipsHTML}</div>`;
 }
 
-function renderFileRow(f) {
-const cat = f.cat || ‘other’;
-const relPath = (CAT_FOLDER[cat] || ‘Other’) + ‘/’ + f.name;
-const ext = f.name.split(’.’).pop().toUpperCase();
-const displayName = f.label || f.name.replace(/.[^.]+$/, ‘’).replace(/[-_]/g, ’ ’);
-return `<a class="file-row" href="#" onclick="return openDoc('${relPath.replace(/'/g, "\\'")}', event)"> <span class="file-cat file-cat-${cat}">${CAT_LABEL[cat] || cat}</span> <span class="file-name">${displayName}</span> <span class="file-ext">.${ext}</span> <span class="file-open-btn">↗</span> </a>`;
+// ══════════════════════════════════════════
+//  HORIZON MODE – Grid Mosaic Cards
+// ══════════════════════════════════════════
+
+function renderHorizonCard(c, dayColor, dayFiles, dayIdx, cardIdx) {
+const meta = TYPE_META[c.type] || { color: ‘var(–activity-c)’, label: c.type };
+const tags = parseTags(c.tags);
+const colorVar = meta.color;
+const isTransport = [‘flight’, ‘transit’, ‘bus’, ‘ferry’, ‘taxi’].includes(c.type);
+const visitedClass = c.visited ? ’ card-visited’ : ‘’;
+
+const visitedBubbleTitle = c.visited ? t(‘visited.markUndone’) : t(‘visited.markDone’);
+const visitedBubble = `<button class="card-visited-bubble${c.visited ? ' active' : ''}" onclick="event.stopPropagation();toggleCardVisited(${dayIdx},${cardIdx})" title="${visitedBubbleTitle}"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5.5L4 7.5L8 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
+
+// Title + sub (never truncated)
+let titleHTML, subHTML = ‘’;
+if (isTransport) {
+titleHTML = `${c.from || ''} <span class="hz-card-arrow">\u2192</span> ${c.to || ''}`;
+subHTML = c.carrier || ‘’;
+} else {
+titleHTML = c.title || ‘’;
+subHTML = c.sub || ‘’;
 }
 
-function assignFilesToCards(day) {
-const CAT_TO_TYPE = { transport: [‘flight’, ‘transit’, ‘bus’, ‘ferry’, ‘taxi’], stay: [‘stay’] };
-const catIdx = {};
-return (day.files || []).map(f => {
-if (f.cardType || f.cardTitle) return f;
-const types = CAT_TO_TYPE[f.cat];
-if (types) {
-const matchingCards = (day.cards || []).filter(c => types.includes(c.type));
-const i = catIdx[f.cat] = (catIdx[f.cat] || 0);
-catIdx[f.cat] = i + 1;
-const targetCard = matchingCards[i] || matchingCards[0];
-if (targetCard) return { …f, cardTitle: targetCard.title };
+// Tips
+const showTips = c.tips && c.tips.length;
+const tipsHTML = showTips
+? `<div class="hz-card-tips">${c.tips.slice(0, 3).map(tip => `<div class="hz-card-tip">${tip}</div>`).join('')}</div>` : ‘’;
+
+// Tags
+const tagsHTML = tags.length
+? `<div class="hz-card-tags">${tags.map(tg => `<span class="tag tag-${tg.cls || 'default'}">${tg.label}</span>`).join('')}</div>` : ‘’;
+
+const expandedHTML = buildExpandedHTML(c, meta, dayFiles, dayIdx, cardIdx);
+
+// Transport gets a special compact connector-style look
+if (isTransport) {
+return `<div class="hz-card hz-card-transport${visitedClass}" style="--card-c:${colorVar}" data-type="${c.type}" data-day="${dayIdx}" data-card="${cardIdx}"> <div class="hz-card-row1"> <div class="hz-card-icon" style="color:${colorVar};background:${colorVar}15">${cardIcon(c, 16)}</div> <span class="hz-card-type" style="color:${colorVar}">${meta.label}</span> <span class="hz-card-time">${fmtTime(c.time)}</span> ${visitedBubble} </div> <div class="hz-card-route"> <span class="hz-card-route-city">${c.from || ''}</span> <span class="hz-card-route-arrow" style="color:${colorVar}">\u2192</span> <span class="hz-card-route-city">${c.to || ''}</span> </div> ${subHTML ?`<div class="hz-card-sub">${subHTML}</div>` : ''} ${tagsHTML} ${expandedHTML} </div>`;
 }
-if (f.label) {
-const words = f.label.toLowerCase().split(/[\s-.·]+/).filter(w => w.length > 3);
-let best = null, bestScore = 0;
-for (const card of (day.cards || [])) {
-const title = card.title.toLowerCase();
-const score = words.filter(w => title.includes(w)).length;
-if (score > bestScore) { bestScore = score; best = card; }
+
+return `
+
+  <div class="hz-card${visitedClass}" style="--card-c:${colorVar}" data-type="${c.type}" data-day="${dayIdx}" data-card="${cardIdx}">
+    <div class="hz-card-row1">
+      <div class="hz-card-icon" style="color:${colorVar};background:${colorVar}15">${cardIcon(c, 16)}</div>
+      <span class="hz-card-type" style="color:${colorVar}">${meta.label}</span>
+      <span class="hz-card-time">${fmtTime(c.time)}</span>
+      ${visitedBubble}
+    </div>
+    <div class="hz-card-title">${titleHTML}</div>
+    ${subHTML ? `<div class="hz-card-sub">${subHTML}</div>` : ''}
+    ${tipsHTML}
+    ${tagsHTML}
+    ${expandedHTML}
+  </div>`;
 }
-if (best && bestScore > 0) return { …f, cardTitle: best.title };
+
+// ══════════════════════════════════════════
+//  JOURNAL MODE – Notebook Entries
+// ══════════════════════════════════════════
+
+function renderJournalEntry(c, dayColor, dayFiles, dayIdx, cardIdx) {
+const meta = TYPE_META[c.type] || { color: ‘var(–activity-c)’, label: c.type };
+const colorVar = meta.color;
+const isTransport = [‘flight’, ‘transit’, ‘bus’, ‘ferry’, ‘taxi’].includes(c.type);
+const visitedClass = c.visited ? ’ card-visited’ : ‘’;
+
+const visitedBubbleTitle = c.visited ? t(‘visited.markUndone’) : t(‘visited.markDone’);
+const visitedBubble = `<button class="card-visited-bubble${c.visited ? ' active' : ''}" onclick="event.stopPropagation();toggleCardVisited(${dayIdx},${cardIdx})" title="${visitedBubbleTitle}"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5.5L4 7.5L8 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
+
+let titleText = isTransport ? `${c.from || ''} \u2192 ${c.to || ''}` : (c.title || ‘’);
+let subText = isTransport ? (c.carrier || ‘’) : (c.sub || ‘’);
+
+const expandedHTML = buildExpandedHTML(c, meta, dayFiles, dayIdx, cardIdx);
+
+return `
+
+  <div class="journal-entry${visitedClass}" style="--card-c:${colorVar}" data-type="${c.type}" data-day="${dayIdx}" data-card="${cardIdx}">
+    <div class="journal-entry-collapsed">
+      <span class="journal-entry-time">${fmtTime(c.time)}</span>
+      <span class="journal-entry-dot" style="background:${colorVar}"></span>
+      <div class="journal-entry-body">
+        <div class="journal-entry-title">${titleText}</div>
+        ${subText ? `<div class="journal-entry-sub">${subText}</div>` : ''}
+      </div>
+      ${visitedBubble}
+    </div>
+    ${expandedHTML}
+  </div>`;
 }
-const first = (day.cards || []).find(c => c.type !== ‘checkout’);
-return { …f, cardTitle: first ? first.title : ‘**none**’ };
+
+// ══════════════════════════════════════════
+//  DAY RENDERING
+// ══════════════════════════════════════════
+
+function renderDay(day, dayIndex) {
+const mode = (typeof currentDisplayMode !== ‘undefined’) ? currentDisplayMode : ‘horizon’;
+if (mode === ‘journal’) return renderJournalDay(day, dayIndex);
+return renderHorizonDay(day, dayIndex);
+}
+
+function renderHorizonDay(day, dayIndex) {
+const foodCount = (day.food || []).length;
+const fin = dayFinancials(day);
+const actCount = countActivities(day);
+const assignedFiles = assignFilesToCards(day);
+const useLanes = needsStackedLanes(day);
+
+// Parse date “Thu 30 Apr” → { num: “30”, text: “Thu · Apr” }
+const dateParts = parseDateParts(day.date);
+
+// Meta pills
+const metaPills = [];
+if (fin.hasPaid || fin.hasUnpaid) {
+const total = fin.paid + fin.unpaid;
+metaPills.push(`<span class="hz-meta-pill">\u20AC${total.toFixed(2)}</span>`);
+}
+const mapCards = (day.cards || []).filter(c => c.maps || c.mapsFrom || c.mapsTo);
+if (mapCards.length > 0) {
+metaPills.push(`<button class="hz-meta-pill day-map-btn" onclick="toggleDayMap(event, this, ${dayIndex})">${icon('map',11)} ${mapCards.length}</button>`);
+}
+if (foodCount > 0) {
+metaPills.push(`<button class="hz-meta-pill day-food-btn" onclick="toggleFood(event, this)">${icon('utensils',11)} ${foodCount} food</button>`);
+}
+if (actCount > 0) {
+metaPills.push(`<span class="hz-meta-pill">${actCount} ${actCount === 1 ? 'activity' : 'activities'}</span>`);
+}
+
+// City display (colored text, concept style)
+let cityHTML;
+const resolved = resolveSegments(day);
+if (resolved) {
+const unique = […new Set(resolved.segments)];
+const isDayTrip = !!day.dayTrip;
+const separator = isDayTrip ? ’ \u21CB ’ : ’ \u2192 ’;
+cityHTML = unique.map(s => `<span style="color:${resolved.segmentColors[s]}">${s}</span>`).join(`<span style="color:var(--dim);font-size:.7rem;margin:0 6px">${separator.trim()}</span>`);
+if (isDayTrip) {
+metaPills.unshift(`<span class="hz-meta-pill" style="color:var(--park-c);border-color:rgba(116,196,138,0.25);background:rgba(116,196,138,0.06)">\u21CB ${t('lane.dayTrip')}</span>`);
+}
+} else {
+const col = CITY_COLORS[day.city] || day.color;
+const flagHtml = day.flag ? `${countryFlag(day.flag, 14)} ` : ‘’;
+cityHTML = `${flagHtml}<span style="color:${col}">${day.city}</span>`;
+}
+
+// Cards – smart grid: compute optimal placement based on duration
+let cardsInnerHTML;
+const cards = day.cards || [];
+const isTransportType = tp => [‘flight’,‘transit’,‘bus’,‘ferry’,‘taxi’].includes(tp);
+if (useLanes) {
+cardsInnerHTML = renderStackedLanes(day, dayIndex, assignedFiles);
+} else {
+// Build items array with card HTML and slot sizes
+const items = [];
+for (let ci = 0; ci < cards.length; ci++) {
+const c = cards[ci];
+const isTr = isTransportType(c.type);
+// If first card is transport → add origin city placeholder before it
+if (ci === 0 && isTr && c.from) {
+const fromCity = c.from.replace(/\s*(.*)/, ‘’);
+const col = CITY_COLORS[fromCity] || day.color || ‘#aaa’;
+const fFlag = day.flag ? countryFlag(day.flag, 18) : ‘’;
+items.push({ html: `<div class="hz-card hz-card-city-placeholder" style="--card-c:${col}"><span class="hz-city-ph-flag">${fFlag}</span><span class="hz-city-ph-name" style="color:${col}">${fromCity}</span></div>`, slots: 1 });
+}
+items.push({ html: renderHorizonCard(c, day.color, assignedFiles, dayIndex, ci), slots: getSlotSize(c.time) });
+// If last card is transport → add destination city placeholder after it
+if (ci === cards.length - 1 && isTr && c.to) {
+const toCity = c.to.replace(/\s*(.*)/, ‘’);
+const destDay = DAYS.find(d => d.city === toCity);
+const tFlag = destDay ? countryFlag(destDay.flag, 18) : ‘’;
+const col = CITY_COLORS[toCity] || day.color || ‘#aaa’;
+items.push({ html: `<div class="hz-card hz-card-city-placeholder" style="--card-c:${col}"><span class="hz-city-ph-flag">${tFlag}</span><span class="hz-city-ph-name" style="color:${col}">${toCity}</span></div>`, slots: 1 });
+}
+}
+const placements = computeSmartGrid(items.map(it => it.slots));
+const gridItems = items.map((it, i) => {
+const p = placements[i];
+return `<div style="grid-column:${p.col + 1}/span ${p.w};grid-row:${p.row + 1}/span ${p.h}">${it.html}</div>`;
+}).join(’’);
+cardsInnerHTML = `<div class="hz-grid">${gridItems}</div>`;
+}
+
+// Food panel
+const foodPanelHTML = foodCount > 0 ? `<div class="food-panel"><div class="food-panel-inner">${day.food.map(f => `<div class="food-tip"><div class="food-emoji">${renderIcon(f.e, 18)}</div><div><div class="food-dish">${f.dish}</div><div class="food-desc">${f.desc}</div></div></div>`).join('')}</div></div>` : ‘’;
+
+// Map panel
+const mapPanelHTML = mapCards.length > 0 ? `<div class="day-map-panel" id="day-map-panel-${dayIndex}"><div class="day-map-container" id="day-map-${dayIndex}"></div></div>` : ‘’;
+
+return `
+
+  <div class="hz-day" style="--day-color:${day.color || '#aaa'}" data-day-index="${dayIndex}">
+    <div class="hz-day-header" onclick="toggleDay(event, this)">
+      <span class="hz-date-big">${dateParts.num}</span>
+      <div><div class="hz-date-text">${dateParts.text}</div></div>
+      <span class="hz-city">${cityHTML}</span>
+      <div class="hz-meta">${metaPills.join('')}</div>
+    </div>
+    <div class="hz-day-body">
+      ${mapPanelHTML}
+      ${foodPanelHTML}
+      ${cardsInnerHTML}
+    </div>
+  </div>`;
+}
+
+function renderJournalDay(day, dayIndex) {
+const foodCount = (day.food || []).length;
+const assignedFiles = assignFilesToCards(day);
+const col = CITY_COLORS[day.city] || day.color;
+const dateParts = parseDateParts(day.date);
+const flagHtml = day.flag ? countryFlag(day.flag, 14) : ‘’;
+
+const foodBubble = foodCount > 0 ? `<button class="hz-meta-pill day-food-btn" onclick="toggleFood(event, this)">${icon('utensils',11)} ${foodCount}</button>` : ‘’;
+const foodPanelHTML = foodCount > 0 ? `<div class="food-panel"><div class="food-panel-inner">${day.food.map(f => `<div class="food-tip"><div class="food-emoji">${renderIcon(f.e, 18)}</div><div><div class="food-dish">${f.dish}</div><div class="food-desc">${f.desc}</div></div></div>`).join('')}</div></div>` : ‘’;
+
+const mapCards = (day.cards || []).filter(c => c.maps || c.mapsFrom || c.mapsTo);
+const mapPanelHTML = mapCards.length > 0 ? `<div class="day-map-panel" id="day-map-panel-${dayIndex}"><div class="day-map-container" id="day-map-${dayIndex}"></div></div>` : ‘’;
+const mapBubble = mapCards.length > 0 ? `<button class="hz-meta-pill day-map-btn" onclick="toggleDayMap(event, this, ${dayIndex})">${icon('map',11)} ${mapCards.length}</button>` : ‘’;
+
+const entriesHTML = (day.cards || []).map((c, ci) => renderJournalEntry(c, day.color, assignedFiles, dayIndex, ci)).join(’’);
+
+// Stamp only for day trips (show origin city)
+const isDayTrip = !!day.dayTrip;
+const stampHTML = isDayTrip
+? `<span class="journal-day-trip-badge" style="border-color:${col};color:${col}">${t('lane.dayTrip')} \u2014 ${day.city}</span>`
+: ‘’;
+
+return `
+
+  <div class="journal-day" style="--day-color:${col}" data-day-index="${dayIndex}">
+    <div class="journal-page" onclick="toggleDay(event, this)">
+      <div class="journal-page-header">
+        <div class="journal-date-block">
+          <div class="journal-date-num">${dateParts.num}</div>
+          <div class="journal-date-month">${dateParts.text}</div>
+        </div>
+        <div class="journal-city-info">
+          <div class="journal-city-name" style="color:${col}">${flagHtml} ${day.city} ${stampHTML}</div>
+        </div>
+        <div class="hz-meta">${mapBubble}${foodBubble}</div>
+      </div>
+      <div class="journal-day-body">
+        ${mapPanelHTML}
+        ${foodPanelHTML}
+        <div class="journal-entries">
+          ${entriesHTML}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+//  STACKED LANES (Multi-city & Day Trips)
+// ══════════════════════════════════════════
+
+function renderStackedLanes(day, dayIndex, assignedFiles) {
+const resolved = resolveSegments(day);
+const isDayTrip = !!day.dayTrip;
+const knownCities = Object.keys(CITY_COLORS);
+const isTransportType = tp => [‘transit’, ‘flight’, ‘bus’, ‘ferry’, ‘taxi’].includes(tp);
+
+if (!resolved) {
+const fallbackCards = day.cards || [];
+const fallbackSlots = fallbackCards.map(c => getSlotSize(c.time));
+const fallbackPlacements = computeSmartGrid(fallbackSlots);
+const fallbackItems = fallbackCards.map((c, ci) => {
+const p = fallbackPlacements[ci];
+return `<div style="grid-column:${p.col + 1}/span ${p.w};grid-row:${p.row + 1}/span ${p.h}">${renderHorizonCard(c, day.color, assignedFiles, dayIndex, ci)}</div>`;
+}).join(’’);
+return `<div class="hz-grid">${fallbackItems}</div>`;
+}
+
+const sc = resolved.segmentColors;
+const segs = resolved.segments;
+
+// Separate cards into lanes and transport connectors
+const lanes = [];
+const connectors = [];
+let currentCity = segs[0];
+let currentLane = { city: currentCity, color: sc[currentCity] || day.color, cards: [] };
+
+for (let i = 0; i < (day.cards || []).length; i++) {
+const c = day.cards[i];
+const isTransport = isTransportType(c.type);
+
+```
+// Transport that bridges cities → make a connector
+if (isTransport && c.to) {
+  let destCity = null;
+  for (const city of knownCities) {
+    if (c.to.includes(city) && city !== currentCity) { destCity = city; break; }
+  }
+  if (destCity) {
+    lanes.push(currentLane);
+    connectors.push({ afterLane: lanes.length - 1, card: c, index: i, fromCity: currentCity, toCity: destCity, fromColor: sc[currentCity] || day.color, toColor: sc[destCity] || day.color });
+    currentCity = destCity;
+    currentLane = { city: destCity, color: sc[destCity] || day.color, cards: [] };
+    continue;
+  }
+}
+
+const cardCity = c.city || currentCity;
+if (cardCity !== currentCity) {
+  if (currentLane.cards.length > 0) lanes.push(currentLane);
+  currentCity = cardCity;
+  currentLane = { city: cardCity, color: sc[cardCity] || day.color, cards: [] };
+}
+currentLane.cards.push({ card: c, index: i });
+if (c.city) currentCity = c.city;
+```
+
+}
+// Always push last lane (may be empty destination city after transport)
+lanes.push(currentLane);
+
+let html = ‘<div class="hz-lanes">’;
+
+lanes.forEach((lane, li) => {
+const flagCode = (day.flag && lane.city === day.city) ? day.flag : (DAYS.find(d => d.city === lane.city)?.flag || day.flag);
+const flagHtml = flagCode ? countryFlag(flagCode, 14) : ‘’;
+const isEmpty = lane.cards.length === 0;
+
+```
+html += `
+<div class="hz-lane${isEmpty ? ' hz-lane-empty' : ''}" style="background:${lane.color}08">
+  <div class="hz-lane-header">
+    ${flagHtml}
+    <span style="color:${lane.color}">${lane.city}</span>
+  </div>
+  ${lane.cards.length > 0 ? (() => {
+    const laneSlots = lane.cards.map(({ card }) => getSlotSize(card.time));
+    const lanePlacements = computeSmartGrid(laneSlots);
+    const laneItems = lane.cards.map(({ card, index }, j) => {
+      const p = lanePlacements[j];
+      return `<div style="grid-column:${p.col + 1}/span ${p.w};grid-row:${p.row + 1}/span ${p.h}">${renderHorizonCard(card, day.color, assignedFiles, dayIndex, index)}</div>`;
+    }).join('');
+    return `<div class="hz-lane-grid">${laneItems}</div>`;
+  })() : ''}
+</div>`;
+
+// Insert transport connector after this lane if any
+const conn = connectors.filter(cn => cn.afterLane === li);
+conn.forEach(cn => {
+  const tags = parseTags(cn.card.tags);
+  const tagsHTML = tags.map(tg => `<span class="tag tag-${tg.cls || 'default'}">${tg.label}</span>`).join('');
+  const isReturn = isDayTrip && cn.toCity === (day.parentCity || lanes[0]?.city);
+  const connMeta = TYPE_META[cn.card.type] || { color: 'var(--transport-c)', label: cn.card.type };
+  const connExpandedHTML = buildExpandedHTML(cn.card, connMeta, assignedFiles, dayIndex, cn.index);
+  html += `
+  <div class="hz-connector${isReturn ? ' hz-connector-return' : ''}" data-type="${cn.card.type}" data-day="${dayIndex}" data-card="${cn.index}" style="--card-c:var(--transport-c)">
+    <div class="hz-connector-line-v" style="background:var(--transport-c)"></div>
+    <div class="hz-connector-pill" style="color:var(--transport-c);border:1px ${isReturn ? 'dashed' : 'solid'} rgba(90,180,212,0.2);background:rgba(90,180,212,0.06)">
+      ${cardIcon(cn.card, 16)}
+      <span style="color:${cn.fromColor}">${cn.fromCity}</span>
+      <span style="color:var(--dim)">\u2192</span>
+      <span style="color:${cn.toColor}">${cn.toCity}</span>
+      <span class="hz-connector-time">${fmtTime(cn.card.time)}</span>
+      ${tagsHTML}
+      ${isReturn ? `<span class="hz-connector-return-label">${t('lane.return').toUpperCase()}</span>` : ''}
+    </div>
+    ${connExpandedHTML}
+  </div>`;
+});
+```
+
+});
+
+// Day trip return connector (if no explicit return transport)
+if (isDayTrip && !connectors.some(cn => cn.toCity === (day.parentCity || lanes[0]?.city))) {
+html += `<div class="hz-connector hz-connector-return"> <div class="hz-connector-line-v" style="background:var(--transport-c)"></div> <div class="hz-connector-pill" style="color:var(--transport-c);border:1px dashed rgba(90,180,212,0.2);background:rgba(90,180,212,0.04)"> <span class="hz-connector-return-label">${t('lane.return').toUpperCase()}</span> </div> </div>`;
+}
+
+html += ‘</div>’;
+return html;
+}
+
+// ══════════════════════════════════════════
+//  TIMELINE
+// ══════════════════════════════════════════
+
+function renderTimeline() {
+const timeline = document.getElementById(‘timeline’);
+
+let html = ‘’;
+for (let di = 0; di < DAYS.length; di++) {
+html += renderDay(DAYS[di], di);
+}
+
+timeline.innerHTML = html;
+
+// Card click handler
+timeline.addEventListener(‘click’, function (e) {
+// If clicking any interactive element inside an expanded card, do nothing – let it work
+if (e.target.closest(’.card-expanded’)) return;
+
+```
+const card = e.target.closest('.hz-card, .journal-entry, .hz-connector');
+if (!card) return;
+if (card.classList.contains('hz-card-city-placeholder')) return;
+if (e.target.closest('.card-close-x')) return;
+if (card.classList.contains('expanded')) return;
+if (expandedCard && expandedCard !== card) {
+  expandedCard.classList.remove('expanded');
+  const oldWrap = expandedCard.parentElement;
+  if (oldWrap && oldWrap._origGridCol) {
+    oldWrap.style.gridColumn = oldWrap._origGridCol;
+    oldWrap.style.gridRow = oldWrap._origGridRow;
+  }
+}
+expandCard(card);
+```
+
 });
 }
 
-function resolveSegments(day) {
-if (day.segments && day.segmentColors) return { segments: day.segments, segmentColors: day.segmentColors };
-const hasExplicitCity = (day.cards || []).some(c => c.city && c.city !== day.city);
-const knownCities = Object.keys(CITY_COLORS);
-const transitCities = [];
-for (const c of (day.cards || [])) {
-if (c.type === ‘transit’ || c.type === ‘flight’) {
-for (const city of knownCities) {
-if (c.to && c.to.includes(city) && city !== day.city) transitCities.push(city);
-}
-}
-}
-if (!hasExplicitCity && transitCities.length === 0) return null;
-const segments = [day.city];
-const segmentColors = { [day.city]: CITY_COLORS[day.city] || day.color };
-let current = day.city;
-for (const c of (day.cards || [])) {
-if (c.city && c.city !== current) {
-if (!segments.includes(c.city) || segments[segments.length - 1] !== c.city) {
-segments.push(c.city);
-}
-segmentColors[c.city] = CITY_COLORS[c.city] || day.color;
-current = c.city;
-}
-if ((c.type === ‘transit’ || c.type === ‘flight’) && c.to) {
-for (const city of knownCities) {
-if (c.to.includes(city) && city !== current) {
-if (segments[segments.length - 1] !== city) segments.push(city);
-segmentColors[city] = CITY_COLORS[city] || day.color;
-current = city;
-break;
-}
-}
-}
-}
-return segments.length > 1 ? { segments, segmentColors } : null;
+// ══════════════════════════════════════════
+//  INTERACTION HANDLERS
+// ══════════════════════════════════════════
+
+function toggleLocation(header) {
+// No-op: city groups removed, kept for backwards compat
 }
 
-function getDocUrl(filename) {
-const lower = filename.toLowerCase();
-if (LOADED_DOCS.has(lower)) return LOADED_DOCS.get(lower);
-const basename = lower.split(’/’).pop();
-if (LOADED_DOCS.has(basename)) return LOADED_DOCS.get(basename);
+function toggleDay(e, header) {
+if (e.target.closest(’.day-food-btn’)) return;
+if (e.target.closest(’.day-map-btn’)) return;
+if (e.target.closest(’.hz-meta-pill[onclick]’)) return;
+if (e.target.closest(’.journal-entry’)) return;
+if (e.target.closest(’.hz-card’)) return;
+if (e.target.closest(’.card-expanded’)) return;
+const day = header.closest(’.hz-day, .journal-day’);
+const body = day.querySelector(’.hz-day-body, .journal-day-body’);
+const isCollapsed = day.classList.contains(‘collapsed’);
+if (isCollapsed) {
+day.classList.remove(‘collapsed’);
+body.style.height = body.scrollHeight + ‘px’;
+body.addEventListener(‘transitionend’, () => { body.style.height = ‘auto’; }, { once: true });
+} else {
+body.style.height = body.scrollHeight + ‘px’;
+requestAnimationFrame(() => requestAnimationFrame(() => {
+body.style.height = ‘0’;
+day.classList.add(‘collapsed’);
+}));
+}
+}
+
+function toggleFood(e, btn) {
+e.stopPropagation();
+const day = btn.closest(’.hz-day, .journal-day’);
+const panel = day.querySelector(’.food-panel’);
+if (!panel) return;
+const isOpen = panel.classList.contains(‘open’);
+if (isOpen) { panel.classList.remove(‘open’); btn.classList.remove(‘active’); }
+else { panel.classList.add(‘open’); btn.classList.add(‘active’); }
+}
+
+function expandCard(cardEl) {
+if (expandedCard && expandedCard !== cardEl) {
+expandedCard.classList.remove(‘expanded’);
+// Restore wrapper grid placement
+const oldWrap = expandedCard.parentElement;
+if (oldWrap && oldWrap._origGridCol) {
+oldWrap.style.gridColumn = oldWrap._origGridCol;
+oldWrap.style.gridRow = oldWrap._origGridRow;
+}
+}
+cardEl.classList.add(‘expanded’);
+expandedCard = cardEl;
+// Expand wrapper to full width if inside smart grid
+const wrap = cardEl.parentElement;
+if (wrap && wrap.parentElement && (wrap.parentElement.classList.contains(‘hz-grid’) || wrap.parentElement.classList.contains(‘hz-lane-grid’))) {
+wrap._origGridCol = wrap.style.gridColumn;
+wrap._origGridRow = wrap.style.gridRow;
+wrap.style.gridColumn = ‘1 / -1’;
+wrap.style.gridRow = ‘auto’;
+}
+document.getElementById(‘card-overlay’).classList.add(‘active’);
+}
+
+function collapseCard(e) {
+e.stopPropagation();
+if (expandedCard) {
+expandedCard.classList.remove(‘expanded’);
+const wrap = expandedCard.parentElement;
+if (wrap && wrap._origGridCol) {
+wrap.style.gridColumn = wrap._origGridCol;
+wrap.style.gridRow = wrap._origGridRow;
+}
+expandedCard = null;
+document.getElementById(‘card-overlay’).classList.remove(‘active’);
+}
+}
+
+// ─── Card Visited Toggle ───
+function toggleCardVisited(dayIdx, cardIdx) {
+const card = DAYS[dayIdx].cards[cardIdx];
+card.visited = !card.visited;
+const sel = `.hz-card[data-day="${dayIdx}"][data-card="${cardIdx}"], .journal-entry[data-day="${dayIdx}"][data-card="${cardIdx}"]`;
+const cardEl = document.querySelector(sel);
+if (cardEl) {
+cardEl.classList.toggle(‘card-visited’, card.visited);
+const bubble = cardEl.querySelector(’.card-visited-bubble’);
+if (bubble) {
+bubble.classList.toggle(‘active’, card.visited);
+bubble.title = card.visited ? t(‘visited.markUndone’) : t(‘visited.markDone’);
+}
+applyPastDayClasses();
+}
+autoSaveToJSON(data => {
+if (data.days && data.days[dayIdx] && data.days[dayIdx].cards && data.days[dayIdx].cards[cardIdx]) {
+data.days[dayIdx].cards[cardIdx].visited = card.visited;
+}
+});
+}
+
+// ─── Past Day Graying ───
+let grayPastEnabled = localStorage.getItem(‘tp-gray-past’) !== ‘false’;
+
+function toggleGrayPast(enabled) {
+grayPastEnabled = enabled;
+localStorage.setItem(‘tp-gray-past’, enabled ? ‘true’ : ‘false’);
+applyPastDayClasses();
+}
+
+function applyPastDayClasses() {
+document.querySelectorAll(’.hz-day, .journal-day’).forEach(dayEl => {
+dayEl.classList.remove(‘day-past’, ‘day-past-unvisited’, ‘day-past-all-unvisited’);
+});
+document.querySelectorAll(’.hz-card, .journal-entry’).forEach(el => {
+el.classList.remove(‘card-past-unvisited’);
+});
+if (!grayPastEnabled) return;
+
+DAYS.forEach((day, di) => {
+if (!isDayInPast(day.date)) return;
+const dayEl = document.querySelector(`.hz-day[data-day-index="${di}"], .journal-day[data-day-index="${di}"]`);
+if (!dayEl) return;
+
+```
+dayEl.classList.add('day-past');
+const cards = day.cards || [];
+const meaningfulCards = cards.filter(c => !['checkout'].includes(c.type));
+const unvisitedCards = meaningfulCards.filter(c => !c.visited);
+
+if (unvisitedCards.length > 0 && unvisitedCards.length === meaningfulCards.length && meaningfulCards.length > 0) {
+  dayEl.classList.add('day-past-all-unvisited');
+} else if (unvisitedCards.length > 0) {
+  dayEl.classList.add('day-past-unvisited');
+}
+
+// Mark individual unvisited cards
+const cardEls = dayEl.querySelectorAll(`.hz-card[data-day="${di}"], .journal-entry[data-day="${di}"]`);
+cardEls.forEach(cardEl => {
+  const ci = parseInt(cardEl.dataset.card);
+  const c = cards[ci];
+  if (c && !c.visited && !['checkout'].includes(c.type)) {
+    cardEl.classList.add('card-past-unvisited');
+  }
+});
+```
+
+});
+}
+
+// ══════════════════════════════════════════
+//  DAY ROUTE MAP (Leaflet)
+// ══════════════════════════════════════════
+
+const _dayMaps = {};
+
+async function toggleDayMap(e, btn, dayIndex) {
+e.stopPropagation();
+const panel = document.getElementById(`day-map-panel-${dayIndex}`);
+if (!panel) return;
+const isOpen = panel.classList.contains(‘open’);
+if (isOpen) { panel.classList.remove(‘open’); btn.classList.remove(‘active’); return; }
+panel.classList.add(‘open’);
+btn.classList.add(‘active’);
+await initDayMap(dayIndex);
+}
+
+function getCoords(m) {
+if (!m) return null;
+if (typeof m === ‘object’ && m.lat && m.lng) return { lat: m.lat, lng: m.lng };
 return null;
 }
 
-function openDoc(filename, event) {
-if (event) event.stopPropagation();
-const url = getDocUrl(filename);
-if (url) {
-window.open(url, ‘_blank’);
+async function initDayMap(dayIndex) {
+const containerId = `day-map-${dayIndex}`;
+const container = document.getElementById(containerId);
+if (!container) return;
+
+const day = DAYS[dayIndex];
+const cards = (day.cards || []).filter(c => c.maps || c.mapsFrom || c.mapsTo);
+if (cards.length === 0) return;
+
+const isTransportType = tp => [‘flight’, ‘transit’, ‘bus’, ‘ferry’, ‘taxi’].includes(tp);
+
+function distM(a, b) {
+const R = 6371000, toRad = v => v * Math.PI / 180;
+const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
+const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+const MERGE_DIST = 200;
+let ptIndex = 0;
+const allPoints = [];
+const routeSegments = [[]];
+const trajectories = [];
+
+for (const c of cards) {
+const meta = TYPE_META[c.type] || { label: c.type, color: ‘#888’ };
+const color = day.color || ‘#aaa’;
+
+```
+if (isTransportType(c.type) && (c.mapsFrom || c.mapsTo)) {
+  const from = getCoords(c.mapsFrom);
+  const to = getCoords(c.mapsTo);
+  if (from) { ptIndex++; allPoints.push({ lat: from.lat, lng: from.lng, color, idx: ptIndex, labels: [{ idx: ptIndex, icon: icon('map-pin', 14), title: mapsLabel(c.mapsFrom), type: `${meta.label} - ${t('card.departure')}` }] }); }
+  if (to) { ptIndex++; allPoints.push({ lat: to.lat, lng: to.lng, color, idx: ptIndex, labels: [{ idx: ptIndex, icon: icon('flag', 14), title: mapsLabel(c.mapsTo), type: `${meta.label} - ${t('card.arrival')}` }] }); }
+  if (from && to) trajectories.push({ from, to, color });
+  if (from) routeSegments[routeSegments.length - 1].push(L.latLng(from.lat, from.lng));
+  if (routeSegments[routeSegments.length - 1].length > 0) routeSegments.push([]);
+  if (to) routeSegments[routeSegments.length - 1].push(L.latLng(to.lat, to.lng));
 } else {
-if (typeof renderDocsList === ‘function’) renderDocsList();
-const panel = document.getElementById(‘docs-panel’);
-if (panel) panel.classList.remove(‘hidden’);
+  const pt = getCoords(c.maps);
+  if (pt) {
+    ptIndex++;
+    allPoints.push({ lat: pt.lat, lng: pt.lng, color, idx: ptIndex, labels: [{ idx: ptIndex, icon: cardIcon(c, 14), title: c.title || mapsLabel(c.maps), type: meta.label }] });
+    routeSegments[routeSegments.length - 1].push(L.latLng(pt.lat, pt.lng));
+  }
 }
-return false;
+```
+
 }
 
-function deepClone(obj) {
-return JSON.parse(JSON.stringify(obj));
+if (allPoints.length === 0) return;
+
+// Merge nearby points
+const merged = [];
+for (const p of allPoints) {
+const existing = merged.find(m => distM(m, p) < MERGE_DIST);
+if (existing) {
+for (const lbl of p.labels) {
+if (!existing.labels.some(l => l.title === lbl.title && l.type === lbl.type)) existing.labels.push(lbl);
+}
+} else {
+merged.push({ lat: p.lat, lng: p.lng, color: p.color, labels: p.labels.map(l => ({ …l })) });
+}
 }
 
-function showToast(msg) {
-const existing = document.querySelector(’.editor-toast’);
-if (existing) existing.remove();
-const toast = document.createElement(‘div’);
-toast.className = ‘editor-toast’;
-toast.textContent = msg;
-document.body.appendChild(toast);
-setTimeout(() => toast.remove(), 2600);
+if (_dayMaps[dayIndex]) { _dayMaps[dayIndex].remove(); delete _dayMaps[dayIndex]; }
+
+const map = L.map(containerId, { zoomControl: true, attributionControl: false });
+_dayMaps[dayIndex] = map;
+L.tileLayer(‘https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png’, { maxZoom: 19 }).addTo(map);
+
+const bounds = L.latLngBounds();
+merged.forEach(m => {
+const latlng = L.latLng(m.lat, m.lng);
+bounds.extend(latlng);
+const indices = m.labels.map(l => l.idx);
+const isMulti = indices.length > 1;
+const pinText = indices.join(’, ‘);
+const markerIcon = L.divIcon({
+className: ‘day-map-marker’,
+html: `<div class="map-pin${isMulti ? ' map-pin-multi' : ''}" style="background:${m.color}">${pinText}</div>`,
+iconSize: isMulti ? [36, 28] : [28, 28],
+iconAnchor: isMulti ? [18, 14] : [14, 14],
+});
+const popupHTML = m.labels.map(l =>
+`<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:${m.color};color:#fff;font-size:0.65rem;font-weight:700;font-family:Consolas,monospace;margin-right:5px;flex-shrink:0">${l.idx}</span><b>${l.icon} ${l.title}</b><br><span style="font-size:0.8em;color:#666;margin-left:23px">${l.type}</span>`
+).join(’<hr style="margin:4px 0;border:0;border-top:1px solid #ddd">’);
+L.marker(latlng, { icon: markerIcon }).addTo(map).bindPopup(popupHTML);
+});
+
+routeSegments.forEach(seg => {
+if (seg.length > 1) L.polyline(seg, { color: day.color || ‘#4a9eff’, weight: 3, opacity: 0.7, dashArray: ‘8 6’ }).addTo(map);
+});
+trajectories.forEach(tr => {
+L.polyline([L.latLng(tr.from.lat, tr.from.lng), L.latLng(tr.to.lat, tr.to.lng)], { color: tr.color || ‘#4a9eff’, weight: 3, opacity: 0.7, dashArray: ‘10 8’ }).addTo(map);
+});
+
+map.fitBounds(bounds.pad(0.15));
+setTimeout(() => map.invalidateSize(), 100);
 }
 
-function escHtml(str) {
-const div = document.createElement(‘div’);
-div.textContent = str || ‘’;
-return div.innerHTML;
+// ── Trip Route Map (Header) ──
+let _tripRouteMap = null;
+
+async function toggleTripRouteMap() {
+const overlay = document.getElementById(‘trip-route-overlay’);
+if (!overlay) return;
+const isOpen = !overlay.classList.contains(‘hidden’);
+if (isOpen) { overlay.classList.add(‘hidden’); return; }
+overlay.classList.remove(‘hidden’);
+const titleEl = document.getElementById(‘trip-route-title’);
+if (titleEl) titleEl.textContent = t(‘map.tripRoute’);
+await initTripRouteMap();
 }
 
-// ─── Date parsing utility ───
-// Parses “Wed 29 Apr” + TRIP_CONFIG.year → Date object
-function parseDayDate(dateStr) {
-if (!dateStr) return null;
-const m = dateStr.match(/^\w+\s+(\d+)\s+(\w+)$/);
+async function initTripRouteMap() {
+const containerId = ‘trip-route-map’;
+const container = document.getElementById(containerId);
+if (!container) return;
+
+const route = TRIP_CONFIG.route;
+if (!route || route.length === 0) return;
+
+if (_tripRouteMap) { _tripRouteMap.remove(); _tripRouteMap = null; }
+
+const dayTripParent = new Map();
+for (const day of DAYS) {
+if (day.dayTrip && day.parentCity) dayTripParent.set(day.city, day.parentCity);
+}
+
+const cityCoords = {};
+for (const r of route) {
+if (!cityCoords[r.city] && r.lat && r.lng) cityCoords[r.city] = { lat: r.lat, lng: r.lng, flag: r.flag };
+}
+
+const stops = [];
+for (const r of route) {
+let lat = r.lat, lng = r.lng;
+if (!lat || !lng) {
+for (const day of DAYS) {
+if (day.city !== r.city) continue;
+for (const c of (day.cards || [])) {
+const pt = getCoords(c.maps) || getCoords(c.mapsFrom) || getCoords(c.mapsTo);
+if (pt) { lat = pt.lat; lng = pt.lng; break; }
+}
+if (lat && lng) break;
+}
+}
+if (lat && lng) {
+stops.push({ lat, lng, city: r.city, flag: r.flag, country: FLAG_TO_COUNTRY[r.flag] || ‘’ });
+if (dayTripParent.has(r.city)) {
+const parent = dayTripParent.get(r.city);
+const pc = cityCoords[parent];
+if (pc) stops.push({ lat: pc.lat, lng: pc.lng, city: parent, flag: pc.flag, country: FLAG_TO_COUNTRY[pc.flag] || ‘’, isReturn: true });
+}
+}
+}
+
+if (stops.length === 0) return;
+
+const map = L.map(containerId, { zoomControl: true, attributionControl: false });
+_tripRouteMap = map;
+L.tileLayer(‘https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png’, { maxZoom: 19 }).addTo(map);
+
+const bounds = L.latLngBounds();
+const coords = [];
+let markerNum = 0;
+
+stops.forEach(s => {
+const latlng = L.latLng(s.lat, s.lng);
+bounds.extend(latlng);
+coords.push(latlng);
+if (!s.isReturn) {
+markerNum++;
+const markerIcon = L.divIcon({
+className: ‘day-map-marker’,
+html: `<div class="map-pin" style="background:#4a9eff">${markerNum}</div>`,
+iconSize: [28, 28], iconAnchor: [14, 14],
+});
+L.marker(latlng, { icon: markerIcon }).addTo(map)
+.bindPopup(`<b>${countryFlag(s.flag, 14)} ${s.city}</b><br><span style="font-size:0.85em;color:#666">${s.country}</span>`);
+}
+});
+
+if (coords.length > 1) L.polyline(coords, { color: ‘#4a9eff’, weight: 3, opacity: 0.75, dashArray: ‘10 8’ }).addTo(map);
+map.fitBounds(bounds.pad(0.15));
+setTimeout(() => map.invalidateSize(), 200);
+}
+
+// ══════════════════════════════════════════
+//  TIMELINE SEARCH & FILTER
+// ══════════════════════════════════════════
+
+let _searchDebounce = null;
+let _currentSearchQuery = ‘’;
+
+function initTimelineSearch() {
+const input = document.getElementById(‘timeline-search-input’);
+if (!input) return;
+input.addEventListener(‘input’, () => {
+clearTimeout(_searchDebounce);
+_searchDebounce = setTimeout(() => applyTimelineSearch(input.value.trim()), 180);
+});
+}
+
+function clearTimelineSearch() {
+const input = document.getElementById(‘timeline-search-input’);
+if (input) input.value = ‘’;
+_currentSearchQuery = ‘’;
+applyTimelineSearch(’’);
+}
+
+function applyTimelineSearch(query) {
+_currentSearchQuery = query;
+const timeline = document.getElementById(‘timeline’);
+if (!timeline) return;
+
+// Remove highlights
+timeline.querySelectorAll(’.search-hl’).forEach(el => {
+const parent = el.parentNode;
+parent.replaceChild(document.createTextNode(el.textContent), el);
+parent.normalize();
+});
+
+const noResults = document.getElementById(‘timeline-no-results’);
+if (!query) {
+timeline.querySelectorAll(’.hz-day, .journal-day’).forEach(d => d.classList.remove(‘search-hidden’));
+timeline.querySelectorAll(’.hz-card, .journal-entry’).forEach(c => c.classList.remove(‘search-hidden’));
+if (noResults) noResults.classList.add(‘hidden’);
+return;
+}
+
+const lowerQ = query.toLowerCase();
+let anyMatch = false;
+
+DAYS.forEach((day, di) => {
+const dayEl = timeline.querySelector(`.hz-day[data-day-index="${di}"], .journal-day[data-day-index="${di}"]`);
+if (!dayEl) return;
+const dayText = [day.date, day.city, day.parentCity || ‘’].join(’ ’).toLowerCase();
+const dayMatch = dayText.includes(lowerQ);
+let anyCardMatch = false;
+
+```
+(day.cards || []).forEach((card, ci) => {
+  const cardEl = dayEl.querySelector(`.hz-card[data-day="${di}"][data-card="${ci}"], .journal-entry[data-day="${di}"][data-card="${ci}"]`);
+  if (!cardEl) return;
+  const cardText = [card.title, card.sub, card.from, card.to, card.carrier, card.time, card.city || '', ...(card.tips || []), ...(Array.isArray(card.tags) ? card.tags : (card.tags || '').split(','))].filter(Boolean).join(' ').toLowerCase();
+  const match = cardText.includes(lowerQ) || dayMatch;
+  cardEl.classList.toggle('search-hidden', !match);
+  if (match) anyCardMatch = true;
+});
+
+const visible = dayMatch || anyCardMatch;
+dayEl.classList.toggle('search-hidden', !visible);
+if (visible) anyMatch = true;
+if (visible && query.length >= 2) highlightTextInElement(dayEl, query);
+```
+
+});
+
+_applyCombinedVisibility();
+if (noResults) {
+const anyTrulyVisible = !!timeline.querySelector(’.hz-card:not(.search-hidden):not(.legend-hidden), .journal-entry:not(.search-hidden):not(.legend-hidden)’);
+noResults.classList.toggle(‘hidden’, anyTrulyVisible);
+}
+}
+
+function highlightTextInElement(container, query) {
+const lowerQ = query.toLowerCase();
+const textNodes = [];
+const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+acceptNode(node) {
+const p = node.parentElement;
+if (!p) return NodeFilter.FILTER_REJECT;
+if (p.tagName === ‘SCRIPT’ || p.tagName === ‘STYLE’) return NodeFilter.FILTER_REJECT;
+if (p.classList.contains(‘search-hl’)) return NodeFilter.FILTER_REJECT;
+if (p.closest(’.search-hidden’)) return NodeFilter.FILTER_REJECT;
+if (p.closest(’.card-expanded’)) return NodeFilter.FILTER_REJECT;
+if (node.textContent.toLowerCase().includes(lowerQ)) return NodeFilter.FILTER_ACCEPT;
+return NodeFilter.FILTER_REJECT;
+}
+});
+while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+for (const node of textNodes) {
+const text = node.textContent;
+const idx = text.toLowerCase().indexOf(lowerQ);
+if (idx === -1) continue;
+const before = document.createTextNode(text.substring(0, idx));
+const mark = document.createElement(‘mark’);
+mark.className = ‘search-hl’;
+mark.textContent = text.substring(idx, idx + query.length);
+const after = document.createTextNode(text.substring(idx + query.length));
+const parent = node.parentNode;
+parent.insertBefore(before, node);
+parent.insertBefore(mark, node);
+parent.insertBefore(after, node);
+parent.removeChild(node);
+}
+}
+
+// ══════════════════════════════════════════
+//  VIEW MODE (Pagination)
+// ══════════════════════════════════════════
+
+let currentViewMode = ‘all’;
+let currentPage = 0;
+const PAGE_SIZE = 5;
+
+function setViewMode(mode) {
+currentViewMode = mode;
+currentPage = 0;
+if (mode === ‘byDay’ && DAYS.length > 0) currentPage = _findBestDayPage();
+document.querySelectorAll(’.view-mode-btn’).forEach(b => b.classList.toggle(‘active’, b.dataset.mode === mode));
+applyViewMode();
+}
+
+function _parseDayDate(displayDate) {
+if (!displayDate) return null;
+const m = displayDate.match(/^\w+\s+(\d+)\s+(\w+)$/);
 if (!m) return null;
-const day = parseInt(m[1]);
-const monthNames = [‘jan’,‘feb’,‘mar’,‘apr’,‘may’,‘jun’,‘jul’,‘aug’,‘sep’,‘oct’,‘nov’,‘dec’];
-// Try English month names first (dates are stored in English)
-let monIdx = monthNames.findIndex(mn => mn === m[2].toLowerCase());
+const dayNum = parseInt(m[1]);
+const monthNames = getMonthNames();
+let monIdx = monthNames.findIndex(mn => mn.toLowerCase() === m[2].toLowerCase());
 if (monIdx < 0) {
-// Try localized month names
-const localized = typeof getMonthNames === ‘function’ ? getMonthNames() : [];
-monIdx = localized.findIndex(mn => mn.toLowerCase() === m[2].toLowerCase());
+const en = [‘Jan’, ‘Feb’, ‘Mar’, ‘Apr’, ‘May’, ‘Jun’, ‘Jul’, ‘Aug’, ‘Sep’, ‘Oct’, ‘Nov’, ‘Dec’];
+monIdx = en.findIndex(mn => mn.toLowerCase() === m[2].toLowerCase());
 }
 if (monIdx < 0) return null;
-const year = (typeof TRIP_CONFIG !== ‘undefined’ && TRIP_CONFIG && TRIP_CONFIG.year)
-? parseInt(TRIP_CONFIG.year) : new Date().getFullYear();
-return new Date(year, monIdx, day);
+const year = (TRIP_CONFIG && TRIP_CONFIG.year) ? parseInt(TRIP_CONFIG.year) : new Date().getFullYear();
+return new Date(year, monIdx, dayNum);
 }
 
-function isDayInPast(dateStr) {
-const d = parseDayDate(dateStr);
-if (!d) return false;
+function _findBestDayPage() {
 const today = new Date();
 today.setHours(0, 0, 0, 0);
-return d < today;
+let exactIdx = -1, earliestFutureIdx = -1, earliestFutureDate = null;
+for (let i = 0; i < DAYS.length; i++) {
+const d = _parseDayDate(DAYS[i].date);
+if (!d) continue;
+d.setHours(0, 0, 0, 0);
+if (d.getTime() === today.getTime()) { exactIdx = i; break; }
+if (d > today && (earliestFutureDate === null || d < earliestFutureDate)) { earliestFutureDate = d; earliestFutureIdx = i; }
+}
+if (exactIdx >= 0) return exactIdx;
+if (earliestFutureIdx >= 0) return earliestFutureIdx;
+return 0;
 }
 
-// ─── Geocoding service (Nominatim) with rate limiting ───
-const _geocodeCache = {};
-const _geocodeQueue = [];
-let _geocodeBusy = false;
+function viewPrev() { if (currentPage > 0) { currentPage–; applyViewMode(); } }
+function viewNext() { const maxP = getMaxPage(); if (currentPage < maxP) { currentPage++; applyViewMode(); } }
 
-async function geocodeAddress(query) {
-if (!query) return null;
-const key = query.trim().toLowerCase();
-if (_geocodeCache[key]) return _geocodeCache[key];
-return new Promise((resolve) => {
-_geocodeQueue.push({ key, query: query.trim(), resolve });
-_processGeocodeQueue();
+function getMaxPage() {
+if (currentViewMode === ‘byDay’) return Math.max(0, DAYS.length - 1);
+if (currentViewMode === ‘byCity’) return Math.max(0, document.querySelectorAll(’.city-divider’).length - 1);
+if (currentViewMode === ‘paged’) return Math.max(0, Math.ceil(DAYS.length / PAGE_SIZE) - 1);
+return 0;
+}
+
+function applyViewMode() {
+const timeline = document.getElementById(‘timeline’);
+if (!timeline) return;
+const nav = document.getElementById(‘view-page-nav’);
+const pageLabel = document.getElementById(‘view-page-label’);
+const allDays = Array.from(timeline.querySelectorAll(’.hz-day, .journal-day’));
+const allDividers = Array.from(timeline.querySelectorAll(’.city-divider’));
+
+allDays.forEach(d => d.classList.remove(‘view-hidden’));
+allDividers.forEach(d => d.classList.remove(‘view-hidden’));
+
+if (currentViewMode === ‘all’) { if (nav) nav.classList.add(‘hidden’); return; }
+if (nav) nav.classList.remove(‘hidden’);
+
+if (currentViewMode === ‘byDay’) {
+allDays.forEach((d, i) => d.classList.toggle(‘view-hidden’, i !== currentPage));
+allDividers.forEach(d => {
+const next = d.nextElementSibling;
+d.classList.toggle(‘view-hidden’, !next || next.classList.contains(‘view-hidden’));
 });
+if (pageLabel) pageLabel.textContent = `${currentPage + 1} ${t('view.pageOf')} ${DAYS.length}`;
 }
-
-async function _processGeocodeQueue() {
-if (_geocodeBusy || _geocodeQueue.length === 0) return;
-_geocodeBusy = true;
-const { key, query, resolve } = _geocodeQueue.shift();
-if (_geocodeCache[key]) { resolve(_geocodeCache[key]); _geocodeBusy = false; _processGeocodeQueue(); return; }
-try {
-const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`, {
-headers: { ‘Accept-Language’: ‘en’ }
+if (currentViewMode === ‘byCity’) {
+/* Group days by city-divider sections */
+const sections = [];
+let current = [];
+allDividers.forEach(d => d.classList.remove(‘view-hidden’));
+timeline.childNodes.forEach(node => {
+if (node.classList && node.classList.contains(‘city-divider’)) {
+if (current.length) sections.push(current);
+current = [node];
+} else if (node.classList && (node.classList.contains(‘hz-day’) || node.classList.contains(‘journal-day’))) {
+current.push(node);
+}
 });
-const data = await resp.json();
-if (data && data.length > 0) {
-const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-_geocodeCache[key] = result;
-resolve(result);
-} else {
-_geocodeCache[key] = null;
-resolve(null);
+if (current.length) sections.push(current);
+sections.forEach((sec, i) => {
+const hidden = i !== currentPage;
+sec.forEach(el => el.classList.toggle(‘view-hidden’, hidden));
+});
+if (pageLabel) pageLabel.textContent = `${currentPage + 1} ${t('view.pageOf')} ${sections.length}`;
 }
-} catch (e) {
-console.warn(‘Geocode failed for’, query, e);
-resolve(null);
-}
-// Rate limit: 1 request per second (Nominatim policy)
-setTimeout(() => { _geocodeBusy = false; _processGeocodeQueue(); }, 1100);
-}
-
-// ─── Auto-save helper: write a field back to JSON ───
-async function autoSaveToJSON(mutator) {
-if (typeof JSON_DIR_HANDLE === ‘undefined’ || !JSON_DIR_HANDLE) return;
-try {
-let jsonFile = null;
-for await (const entry of JSON_DIR_HANDLE.values()) {
-if (entry.kind === ‘file’ && entry.name.toLowerCase().endsWith(’.json’)) {
-const name = entry.name.toLowerCase();
-if (!jsonFile || name.includes(‘trip’) || name.includes(‘config’)) jsonFile = entry;
+if (currentViewMode === ‘paged’) {
+const start = currentPage * PAGE_SIZE, end = start + PAGE_SIZE;
+allDays.forEach((d, i) => d.classList.toggle(‘view-hidden’, i < start || i >= end));
+allDividers.forEach(d => {
+const next = d.nextElementSibling;
+d.classList.toggle(‘view-hidden’, !next || next.classList.contains(‘view-hidden’));
+});
+const totalPages = Math.ceil(DAYS.length / PAGE_SIZE);
+if (pageLabel) pageLabel.textContent = `${currentPage + 1} ${t('view.pageOf')} ${totalPages}`;
 }
 }
-if (!jsonFile) return;
-const file = await jsonFile.getFile();
-const data = JSON.parse(await file.text());
-mutator(data);
-const fh = await JSON_DIR_HANDLE.getFileHandle(jsonFile.name, { create: false });
-const writable = await fh.createWritable();
-await writable.write(JSON.stringify(data, null, 2));
-await writable.close();
-} catch (e) { /* silent */ }
-}
-
-// ─── Trip Statistics ───
-
-/**
-
-- Compute summary statistics for the trip header.
-- @returns {{ days: number, budget: number, cities: number, countries: number }}
-  */
-  function getTripStats() {
-  const totalDays = DAYS.length;
-  let budget = 0;
-  const citySet = new Set();
-  const countrySet = new Set();
-
-for (const day of DAYS) {
-if (day.city) citySet.add(day.city);
-if (day.flag) countrySet.add(day.flag);
-for (const card of (day.cards || [])) {
-const tags = Array.isArray(card.tags) ? card.tags : (card.tags || ‘’).split(’,’);
-for (const tag of tags) {
-const raw = typeof tag === ‘string’ ? tag : ‘’;
-const parts = raw.split(’|’);
-if (parts.length >= 2 && parts[1].trim() === ‘price’) {
-const val = parseFloat(parts[0].replace(/[^\d.,-]/g, ‘’).replace(’,’, ‘.’));
-if (!isNaN(val)) budget += val;
-}
-}
-}
-}
-return { days: totalDays, budget, cities: citySet.size, countries: countrySet.size };
-}
-
-/**
-
-- Determine the card display size tier for the Horizon grid.
-- @param {Object} card
-- @returns {‘sz-1’|‘sz-2’|‘sz-3’}
-  */
-  function getCardSize(card) {
-  const isTransport = [‘flight’, ‘transit’, ‘bus’, ‘ferry’, ‘taxi’].includes(card.type);
-  const hasTips = (card.tips && card.tips.length > 0);
-  const hasSub = !!card.sub;
-  const tagCount = Array.isArray(card.tags) ? card.tags.length : (card.tags || ‘’).split(’,’).filter(Boolean).length;
-
-if (card.type === ‘stay’ || (isTransport && hasTips)) return ‘sz-3’;
-if (isTransport || hasTips || tagCount >= 3) return ‘sz-2’;
-if (hasSub || tagCount >= 1) return ‘sz-2’;
-return ‘sz-1’;
-}
-
-/**
-
-- Check if a day needs Stacked Lanes (multi-city or day trip).
-- @param {Object} day
-- @returns {boolean}
-  */
-  function needsStackedLanes(day) {
-  if (day.dayTrip) return true;
-  const resolved = resolveSegments(day);
-  if (!resolved) return false;
-  const uniqueCities = […new Set(resolved.segments)];
-  return uniqueCities.length > 1;
-  }
