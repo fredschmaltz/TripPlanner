@@ -35,10 +35,12 @@ const selectFolderBtn = document.getElementById(‘select-folder-btn’);
 const selectFilesBtn  = document.getElementById(‘select-files-btn’);
 
 // ── Set icon content (SVGs instead of emoji) ──
+try {
 document.getElementById(‘picker-icon’).innerHTML        = icon(‘folder’, 40);
 document.getElementById(‘editor-toolbar-icon’).innerHTML = icon(‘edit’, 18);
 document.getElementById(‘tp-settings-btn’).innerHTML     = icon(‘settings’, 18);
 document.getElementById(‘search-icon-el’).innerHTML      = icon(‘search’, 15);
+} catch(e) { console.warn(‘Icons not loaded:’, e); }
 
 // Initialize type labels from saved language (must run after utils.js loaded)
 refreshTypeLabels();
