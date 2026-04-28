@@ -905,16 +905,22 @@ function renderTimeline() {
   timeline.innerHTML = html;
 
   // Card click handler
-  timeline.addEventListener('click', function (e) {
+    timeline.addEventListener('click', function (e) {
+    // If clicking any interactive element inside an expanded card, do nothing — let it work
+    if (e.target.closest('.card-expanded')) return;
+
     const card = e.target.closest('.hz-card, .journal-entry, .hz-connector');
     if (!card) return;
     if (card.classList.contains('hz-card-city-placeholder')) return;
     if (e.target.closest('.card-close-x')) return;
-    if (e.target.closest('.contact-row')) return;
-    if (e.target.closest('.card-quick-btn')) return;
     if (card.classList.contains('expanded')) return;
     if (expandedCard && expandedCard !== card) {
       expandedCard.classList.remove('expanded');
+      const oldWrap = expandedCard.parentElement;
+      if (oldWrap && oldWrap._origGridCol) {
+        oldWrap.style.gridColumn = oldWrap._origGridCol;
+        oldWrap.style.gridRow = oldWrap._origGridRow;
+      }
     }
     expandCard(card);
   });
@@ -934,6 +940,7 @@ function toggleDay(e, header) {
   if (e.target.closest('.hz-meta-pill[onclick]')) return;
   if (e.target.closest('.journal-entry')) return;
   if (e.target.closest('.hz-card')) return;
+  if (e.target.closest('.card-expanded')) return;
   const day = header.closest('.hz-day, .journal-day');
   const body = day.querySelector('.hz-day-body, .journal-day-body');
   const isCollapsed = day.classList.contains('collapsed');
