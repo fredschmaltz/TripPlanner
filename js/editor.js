@@ -289,8 +289,8 @@ async function saveTrip() {
     }
   }
 
-  // Persist current card style preference
-  config.trip.cardStyle = currentCardStyle;
+  // Persist current display mode preference
+  config.trip.displayMode = currentDisplayMode;
 
   const jsonStr = JSON.stringify(config, null, 2);
 
