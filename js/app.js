@@ -6,7 +6,8 @@
 let TRIP_CONFIG = null;
 let DAYS = [];
 let ATTACHMENTS_BASE = '';
-let currentCardStyle = localStorage.getItem('tp-card-style') || 'classic';
+let currentDisplayMode = localStorage.getItem('tp-display-mode') || 'horizon';
+let currentTheme = localStorage.getItem('tp-theme') || 'dark';
 
 // Document storage – maps filename to blob URL
 const LOADED_DOCS = new Map();
@@ -178,10 +179,16 @@ function initApp() {
     this.style.pointerEvents = 'none';
     const below = document.elementFromPoint(e.clientX, e.clientY);
     this.style.pointerEvents = '';
-    const card = below ? below.closest('.card') : null;
+    const card = below ? below.closest('.hz-card, .journal-entry, .hz-connector') : null;
     if (card && !card.classList.contains('expanded')) {
       expandCard(card);
     } else {
+      // Restore wrapper grid placement
+      const wrap = expandedCard.parentElement;
+      if (wrap && wrap._origGridCol) {
+        wrap.style.gridColumn = wrap._origGridCol;
+        wrap.style.gridRow = wrap._origGridRow;
+      }
       expandedCard.classList.remove('expanded');
       expandedCard = null;
       this.classList.remove('active');
@@ -468,13 +475,13 @@ function initTrip(data) {
   DAYS = data.days || [];
   ATTACHMENTS_BASE = data.attachmentsBasePath || '';
 
-  // Read card style from config (overrides localStorage)
-  if (TRIP_CONFIG.cardStyle) {
-    currentCardStyle = TRIP_CONFIG.cardStyle;
-    localStorage.setItem('tp-card-style', currentCardStyle);
-    document.documentElement.setAttribute('data-card-style', currentCardStyle);
-    document.querySelectorAll('.tp-style-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.style === currentCardStyle);
+  // Read display mode from config (overrides localStorage)
+  if (TRIP_CONFIG.displayMode) {
+    currentDisplayMode = TRIP_CONFIG.displayMode;
+    localStorage.setItem('tp-display-mode', currentDisplayMode);
+    document.documentElement.setAttribute('data-display-mode', currentDisplayMode);
+    document.querySelectorAll('.tp-display-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === currentDisplayMode);
     });
   }
 
@@ -511,6 +518,7 @@ function initTrip(data) {
   // Initialize search & view controls
   initTimelineSearch();
   applyTimelineControlsTranslations();
+  applyTripViewTranslations();
 
   document.querySelectorAll('.day-body, .location-body').forEach(b => {
     b.style.height = 'auto';
@@ -550,20 +558,20 @@ document.addEventListener('DOMContentLoaded', initApp);
 
 // ─── Settings popover ───
 function initSettingsBar() {
-  // Sync theme buttons with saved preference
+  // Sync theme buttons
   document.querySelectorAll('.tp-theme-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.theme === currentTheme);
   });
-  // Sync lang buttons with saved preference
+  // Sync lang buttons
   document.querySelectorAll('.tp-lang-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.lang === currentLang);
   });
-  // Sync card style buttons
-  document.querySelectorAll('.tp-style-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.style === currentCardStyle);
+  // Sync display mode buttons
+  document.querySelectorAll('.tp-display-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === currentDisplayMode);
   });
-  // Apply card style attribute
-  document.documentElement.setAttribute('data-card-style', currentCardStyle);
+  // Apply display mode attribute
+  document.documentElement.setAttribute('data-display-mode', currentDisplayMode);
   // Translate labels
   applySettingsLabels();
 }
@@ -599,50 +607,55 @@ function restoreSettingsFromToolbar() {
   _settingsOriginalNext = null;
 }
 
-// ─── Card Style ───
-function setCardStyle(style) {
-  currentCardStyle = style;
-  localStorage.setItem('tp-card-style', style);
-  document.documentElement.setAttribute('data-card-style', style);
-  // Update toggle button states
-  document.querySelectorAll('.tp-style-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.style === style);
+// ─── Theme ───
+function setTheme(theme) {
+  currentTheme = theme;
+  localStorage.setItem('tp-theme', theme);
+  document.documentElement.setAttribute('data-theme', theme);
+  document.querySelectorAll('.tp-theme-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.theme === theme);
   });
-  // Re-render if trip is loaded
+}
+
+// Apply saved theme on load
+document.documentElement.setAttribute('data-theme', currentTheme);
+
+// ─── Display Mode ───
+function setDisplayMode(mode) {
+  currentDisplayMode = mode;
+  localStorage.setItem('tp-display-mode', mode);
+  document.documentElement.setAttribute('data-display-mode', mode);
+  document.querySelectorAll('.tp-display-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
   if (TRIP_CONFIG) {
+    renderHeader();
     renderTimeline();
     applyPastDayClasses();
   }
-  // Auto-save to config JSON if file system available
-  autoSaveCardStyle(style);
+  autoSaveDisplayMode(mode);
 }
 
-async function autoSaveCardStyle(style) {
+async function autoSaveDisplayMode(mode) {
   if (!JSON_DIR_HANDLE) return;
   try {
-    // Read current config
     let jsonFile = null;
     for await (const entry of JSON_DIR_HANDLE.values()) {
       if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.json')) {
         const name = entry.name.toLowerCase();
-        if (!jsonFile || name.includes('trip') || name.includes('config')) {
-          jsonFile = entry;
-        }
+        if (!jsonFile || name.includes('trip') || name.includes('config')) jsonFile = entry;
       }
     }
     if (!jsonFile) return;
     const file = await jsonFile.getFile();
     const data = JSON.parse(await file.text());
     data.trip = data.trip || {};
-    data.trip.cardStyle = style;
-    // Write back
+    data.trip.displayMode = mode;
     const fh = await JSON_DIR_HANDLE.getFileHandle(jsonFile.name, { create: false });
     const writable = await fh.createWritable();
     await writable.write(JSON.stringify(data, null, 2));
     await writable.close();
-  } catch (e) {
-    // Silently fail — will be saved on next editor save
-  }
+  } catch (e) { /* silent */ }
 }
 
 // Close popover when clicking outside
@@ -699,7 +712,7 @@ window.refreshCardBody = refreshCardBody;
 window.renderDocsList = renderDocsList;
 window.setTheme = setTheme;
 window.setLanguage = setLanguage;
-window.setCardStyle = setCardStyle;
+window.setDisplayMode = setDisplayMode;
 window.initSettingsBar = initSettingsBar;
 window.toggleSettingsPopover = toggleSettingsPopover;
 window.moveSettingsToToolbar = moveSettingsToToolbar;
