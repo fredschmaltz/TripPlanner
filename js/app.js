@@ -172,41 +172,22 @@ function initApp() {
     }
   });
 
-  // ── Overlay click-to-close (or switch card) ──
-  document.getElementById('card-overlay').addEventListener('click', function (e) {
-  e.stopPropagation();
+document.getElementById('card-overlay').addEventListener('click', function (e) {
   if (!expandedCard) return;
-    
-    // Get real clicked element (behind overlay)
-    this.style.pointerEvents = 'none';
-    const realTarget = document.elementFromPoint(e.clientX, e.clientY);
-    
-    // ⚠️ IMPORTANT: delay restoring pointer events
-    setTimeout(() => {
-      this.style.pointerEvents = '';
-    }, 0);
-      
-    if (realTarget && expandedCard.contains(realTarget)) {
-      // Let the click go through to the actual button
-      return;
+
+  // If clicking directly on overlay (not the card), close
+  if (e.target === this) {
+    const wrap = expandedCard.parentElement;
+    if (wrap && wrap._origGridCol) {
+      wrap.style.gridColumn = wrap._origGridCol;
+      wrap.style.gridRow = wrap._origGridRow;
     }
-  
-    const card = realTarget ? realTarget.closest('.hz-card, .journal-entry, .hz-connector') : null;
-  
-    if (card && !card.classList.contains('expanded')) {
-      expandCard(card);
-    } else {
-      // Restore wrapper grid placement
-      const wrap = expandedCard.parentElement;
-      if (wrap && wrap._origGridCol) {
-        wrap.style.gridColumn = wrap._origGridCol;
-        wrap.style.gridRow = wrap._origGridRow;
-      }
-      expandedCard.classList.remove('expanded');
-      expandedCard = null;
-      this.classList.remove('active');
-    }
-  });
+
+    expandedCard.classList.remove('expanded');
+    expandedCard = null;
+    this.classList.remove('active');
+  }
+});
 }
 
 // ─── Folder/File Loaders ───
