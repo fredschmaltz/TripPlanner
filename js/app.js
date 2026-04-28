@@ -44,5 +44,3 @@ overlay.addEventListener('click', function (e) {
         overlay.classList.remove('active');
     }
 });
-
-// Safeguard future references corresponding UI 
