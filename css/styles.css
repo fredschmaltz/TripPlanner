@@ -198,14 +198,14 @@ button.hz-meta-pill:hover{border-color:rgba(255,255,255,.15);color:var(--text)}
 /* ═══════════════════════════════════════════
    INLINE EXPAND (concept Option A)
 ═══════════════════════════════════════════ */
-.hz-card.expanded{height:auto !important;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12);box-shadow:0 12px 50px rgba(0,0,0,.5);cursor:default;animation:cardExpand .35s var(--ease) forwards;z-index:10}
+.hz-card.expanded{height:auto !important;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12);box-shadow:0 12px 50px rgba(0,0,0,.5);cursor:default;animation:cardExpand .35s var(--ease) forwards;z-index:20}
 .hz-card.expanded .hz-card-row1{display:none}
 .hz-card.expanded .hz-card-title{display:none}
 .hz-card.expanded .hz-card-sub{display:none}
 .hz-card.expanded .hz-card-tags{display:none}
 .hz-card.expanded .hz-card-tips{display:none}
 .hz-card.expanded .hz-card-route{display:none}
-.journal-entry.expanded{z-index:10;background:rgba(255,255,255,.05);box-shadow:0 8px 40px rgba(0,0,0,.5);border-radius:12px;border:1px solid rgba(255,255,255,.12)}
+.journal-entry.expanded{z-index:20;background:rgba(255,255,255,.05);box-shadow:0 8px 40px rgba(0,0,0,.5);border-radius:12px;border:1px solid rgba(255,255,255,.12)}
 .journal-entry.expanded .journal-entry-collapsed{display:none}
 @keyframes cardExpand{0%{opacity:.9;transform:scale(.98)}100%{opacity:1;transform:scale(1)}}
 
