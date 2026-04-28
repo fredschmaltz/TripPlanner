@@ -174,15 +174,20 @@ function initApp() {
 
   // ── Overlay click-to-close (or switch card) ──
   document.getElementById('card-overlay').addEventListener('click', function (e) {
-    if (!expandedCard) return;
-  
+  e.stopPropagation();
+  if (!expandedCard) return;
+    
     // Get real clicked element (behind overlay)
     this.style.pointerEvents = 'none';
     const realTarget = document.elementFromPoint(e.clientX, e.clientY);
-    this.style.pointerEvents = '';
-  
-    // ✅ Ignore clicks inside expanded card
+    
+    // ⚠️ IMPORTANT: delay restoring pointer events
+    setTimeout(() => {
+      this.style.pointerEvents = '';
+    }, 0);
+      
     if (realTarget && expandedCard.contains(realTarget)) {
+      // Let the click go through to the actual button
       return;
     }
   
