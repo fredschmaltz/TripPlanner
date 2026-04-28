@@ -525,3 +525,63 @@ async function autoSaveToJSON(mutator) {
     await writable.close();
   } catch (e) { /* silent */ }
 }
+
+// ─── Trip Statistics ───
+
+/**
+ * Compute summary statistics for the trip header.
+ * @returns {{ days: number, budget: number, cities: number, countries: number }}
+ */
+function getTripStats() {
+  const totalDays = DAYS.length;
+  let budget = 0;
+  const citySet = new Set();
+  const countrySet = new Set();
+
+  for (const day of DAYS) {
+    if (day.city) citySet.add(day.city);
+    if (day.flag) countrySet.add(day.flag);
+    for (const card of (day.cards || [])) {
+      const tags = Array.isArray(card.tags) ? card.tags : (card.tags || '').split(',');
+      for (const tag of tags) {
+        const raw = typeof tag === 'string' ? tag : '';
+        const parts = raw.split('|');
+        if (parts.length >= 2 && parts[1].trim() === 'price') {
+          const val = parseFloat(parts[0].replace(/[^\d.,\-]/g, '').replace(',', '.'));
+          if (!isNaN(val)) budget += val;
+        }
+      }
+    }
+  }
+  return { days: totalDays, budget, cities: citySet.size, countries: countrySet.size };
+}
+
+/**
+ * Determine the card display size tier for the Horizon grid.
+ * @param {Object} card
+ * @returns {'sz-1'|'sz-2'|'sz-3'}
+ */
+function getCardSize(card) {
+  const isTransport = ['flight', 'transit', 'bus', 'ferry', 'taxi'].includes(card.type);
+  const hasTips = (card.tips && card.tips.length > 0);
+  const hasSub = !!card.sub;
+  const tagCount = Array.isArray(card.tags) ? card.tags.length : (card.tags || '').split(',').filter(Boolean).length;
+
+  if (card.type === 'stay' || (isTransport && hasTips)) return 'sz-3';
+  if (isTransport || hasTips || tagCount >= 3) return 'sz-2';
+  if (hasSub || tagCount >= 1) return 'sz-2';
+  return 'sz-1';
+}
+
+/**
+ * Check if a day needs Stacked Lanes (multi-city or day trip).
+ * @param {Object} day
+ * @returns {boolean}
+ */
+function needsStackedLanes(day) {
+  if (day.dayTrip) return true;
+  const resolved = resolveSegments(day);
+  if (!resolved) return false;
+  const uniqueCities = [...new Set(resolved.segments)];
+  return uniqueCities.length > 1;
+}
