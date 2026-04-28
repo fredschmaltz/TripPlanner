@@ -98,6 +98,16 @@ const ICON_PATHS = {
   pepper:        '<path d="M12 3c-2 0-5 3-5 8s3 10 5 10 5-5 5-10-3-8-5-8Z"/><path d="M12 3c0-1.5 1-2 2-1"/>',
   bread:         '<ellipse cx="12" cy="14" rx="8" ry="6"/><path d="M4 14c0-4 3-8 8-8s8 4 8 8"/><path d="M8 11c2 1 6 1 8 0"/>',
   dessert:       '<path d="M8 22h8"/><path d="M12 11v11"/><path d="M20 8H4l2-5h12Z"/><path d="M6 8c0 3 2.7 5 6 5s6-2 6-5"/>',
+
+  /* ── UI / View Mode ────────────────── */
+  'grid-2x2':    '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+  'book-open':   '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+  'calendar':    '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  'wallet':      '<rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20M16 14h2"/>',
+  'buildings':   '<path d="M6 22V4l6-2v20M18 22V10l-6-2M6 22h12M10 8h1M10 12h1M10 16h1M14 12h1M14 16h1"/>',
+  'globe':       '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/>',
+  'repeat':      '<path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
+  'stamp':       '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="6"/><path d="M12 6v1M12 17v1M6 12h1M17 12h1"/>',
 };
 
 /**
