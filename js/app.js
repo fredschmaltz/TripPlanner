@@ -172,12 +172,14 @@ renderDocsList();
 }
 });
 
-// Close expanded card when clicking outside it (capture phase)
+// Close expanded card when clicking outside it (bubble phase)
 document.addEventListener(‘click’, function (e) {
 if (!expandedCard) return;
-// If click is inside the expanded card, let it through untouched
+const overlay = document.getElementById(‘card-overlay’);
+if (!overlay || !overlay.classList.contains(‘active’)) return;
+// If click is inside the expanded card, do nothing
 if (expandedCard.contains(e.target)) return;
-// Clicked outside — close the card
+// Clicked outside — close
 const wrap = expandedCard.parentElement;
 if (wrap && wrap._origGridCol) {
 wrap.style.gridColumn = wrap._origGridCol;
@@ -185,8 +187,8 @@ wrap.style.gridRow = wrap._origGridRow;
 }
 expandedCard.classList.remove(‘expanded’);
 expandedCard = null;
-document.getElementById(‘card-overlay’).classList.remove(‘active’);
-}, true);
+overlay.classList.remove(‘active’);
+});
 
 }
 
