@@ -179,7 +179,13 @@ function initApp() {
     this.style.pointerEvents = 'none';
     const below = document.elementFromPoint(e.clientX, e.clientY);
     this.style.pointerEvents = '';
+    // If click happened inside expanded card → ignore
+    if (expandedCard && expandedCard.contains(e.target)) {
+      return;
+    }
+
     const card = below ? below.closest('.hz-card, .journal-entry, .hz-connector') : null;
+
     if (card && !card.classList.contains('expanded')) {
       expandCard(card);
     } else {
