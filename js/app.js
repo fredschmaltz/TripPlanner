@@ -35,21 +35,19 @@ const selectFolderBtn = document.getElementById(‘select-folder-btn’);
 const selectFilesBtn  = document.getElementById(‘select-files-btn’);
 
 // ── Set icon content (SVGs instead of emoji) ──
-try {
-document.getElementById(‘picker-icon’).innerHTML        = icon(‘folder’, 40);
-document.getElementById(‘editor-toolbar-icon’).innerHTML = icon(‘edit’, 18);
-document.getElementById(‘tp-settings-btn’).innerHTML     = icon(‘settings’, 18);
-document.getElementById(‘search-icon-el’).innerHTML      = icon(‘search’, 15);
-} catch(e) { console.warn(‘Icons not loaded:’, e); }
+try { document.getElementById(‘picker-icon’).innerHTML        = icon(‘folder’, 40); } catch(e) {}
+try { document.getElementById(‘editor-toolbar-icon’).innerHTML = icon(‘edit’, 18); } catch(e) {}
+try { document.getElementById(‘tp-settings-btn’).innerHTML     = icon(‘settings’, 18); } catch(e) {}
+try { document.getElementById(‘search-icon-el’).innerHTML      = icon(‘search’, 15); } catch(e) {}
 
 // Initialize type labels from saved language (must run after utils.js loaded)
-refreshTypeLabels();
+try { refreshTypeLabels(); } catch(e) {}
 
 // Apply all translatable text
-applyPickerTranslations();
+try { applyPickerTranslations(); } catch(e) {}
 
 // Initialize settings bar toggles from saved prefs
-initSettingsBar();
+try { initSettingsBar(); } catch(e) {}
 
 // ── Picker click ──
 pickerBox.addEventListener(‘click’, async () => {
