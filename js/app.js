@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-TRIP PLANNER — App / State / Init
+TRIP PLANNER – App / State / Init
 ══════════════════════════════════════════ */
 
 // ─── Global State ───
@@ -9,7 +9,7 @@ let ATTACHMENTS_BASE = ‘’;
 let currentDisplayMode = localStorage.getItem(‘tp-display-mode’) || ‘horizon’;
 let currentTheme = localStorage.getItem(‘tp-theme’) || ‘dark’;
 
-// Document storage – maps filename to blob URL
+// Document storage - maps filename to blob URL
 const LOADED_DOCS = new Map();
 let ALL_REQUIRED_FILES = [];
 let JSON_DIR_HANDLE = null;
@@ -362,9 +362,9 @@ const popDocsBtn = document.getElementById(‘tp-pop-docs’);
 const total = ALL_REQUIRED_FILES.length;
 if (total === 0) {
 loadDocsBtn.innerHTML = `${icon('paperclip',14)} ${t('docs.noDocs')}`;
-loadDocsBtn.style.borderColor = ‘var(–border2)’;
-loadDocsBtn.style.color = ‘var(–muted)’;
-if (popDocsBtn) { popDocsBtn.innerHTML = `${icon('paperclip',14)} ${t('docs.noDocs')}`; popDocsBtn.style.color = ‘var(–muted)’; }
+loadDocsBtn.style.borderColor = ‘var(-border2)’;
+loadDocsBtn.style.color = ‘var(-muted)’;
+if (popDocsBtn) { popDocsBtn.innerHTML = `${icon('paperclip',14)} ${t('docs.noDocs')}`; popDocsBtn.style.color = ‘var(-muted)’; }
 } else {
 const matched = ALL_REQUIRED_FILES.filter(f => getDocUrl(f)).length;
 if (matched >= total) {
@@ -397,7 +397,7 @@ const sampleData = {
 trip: {
 title: “East Asia”,
 year: “2026”,
-subtitle: “28 April – 22 May · 25 days · 6 cities”,
+subtitle: “28 April - 22 May · 25 days · 6 cities”,
 route: [
 { flag: “de”, city: “Berlin” },
 { flag: “cn”, city: “Joshland” },
@@ -413,7 +413,7 @@ cards: [
 {
 time: “Check-in 15:00”, type: “stay”, icon: “bed”,
 title: “Hotel Stay Well”,
-sub: “Double Room – Non Smoking · 5 nights”,
+sub: “Double Room - Non Smoking · 5 nights”,
 tags: [“€349.40|price”, “Paid|paid”],
 maps: “Stay Well, Ballard, Joshland”,
 phone: “+81351557111”,
@@ -424,24 +424,24 @@ tips: [“Great location: nightlife at doorstep.”]
 {
 date: “Thu 30 Apr”, flag: “jp”, city: “Tokyo”, color: “#e94560”,
 food: [
-{ e: “skewer”, dish: “Taiyaki & Street Sweets”, desc: “Nakamise Street — grab taiyaki (fish-shaped waffles).” },
-{ e: “sushi”, dish: “Sushi”, desc: “Tsukiji Outer Market is a short detour — fresh nigiri.” }
+{ e: “skewer”, dish: “Taiyaki & Street Sweets”, desc: “Nakamise Street – grab taiyaki (fish-shaped waffles).” },
+{ e: “sushi”, dish: “Sushi”, desc: “Tsukiji Outer Market is a short detour – fresh nigiri.” }
 ],
 cards: [
 {
-time: “08:00–09:30”, type: “temple”, icon: “torii”,
+time: “08:00-09:30”, type: “temple”, icon: “torii”,
 title: “Senso-ji”, sub: “Temple visit”,
 maps: “Senso-ji Temple, Asakusa, Tokyo”,
-tips: [“Arrive before 9am to beat crowds.”, “Pull an omikuji fortune slip — ¥100.”]
+tips: [“Arrive before 9am to beat crowds.”, “Pull an omikuji fortune slip – ¥100.”]
 },
 {
-time: “10:00–12:30”, type: “viewpoint”, icon: “tower”,
+time: “10:00-12:30”, type: “viewpoint”, icon: “tower”,
 title: “Tokyo Skytree”, tags: [“€9.66|price”],
 maps: “Tokyo Skytree, Sumida, Tokyo”,
 tips: [“Book Tembo Deck online to skip queues.”]
 },
 {
-time: “18:00–21:00”, type: “nightlife”, icon: “beer”,
+time: “18:00-21:00”, type: “nightlife”, icon: “beer”,
 title: “Dinner · Ueno”,
 maps: “Ueno, Taito, Tokyo”,
 tips: [“Try the izakaya alleys east of the station.”]
