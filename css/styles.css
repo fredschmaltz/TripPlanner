@@ -347,6 +347,7 @@ button.hz-meta-pill:hover{border-color:rgba(255,255,255,.15);color:var(--text)}
 ═══════════════════════════════════════════ */
 #card-overlay{position:fixed;inset:0;z-index:15;background:rgba(0,0,0,0);opacity:0;pointer-events:none;transition:opacity .3s,background .3s}
 #card-overlay.active{opacity:1;pointer-events:auto;background:rgba(0,0,0,.15)}
+.card-expanded{position:relative;z-index:25}
 
 /* ═══════════════════════════════════════════
    DOCS PANEL
