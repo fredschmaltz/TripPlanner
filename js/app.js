@@ -175,19 +175,20 @@ function initApp() {
 document.getElementById('card-overlay').addEventListener('click', function (e) {
   if (!expandedCard) return;
 
-  // If clicking directly on overlay (not the card), close
-  if (e.target === this) {
-    const wrap = expandedCard.parentElement;
-    if (wrap && wrap._origGridCol) {
-      wrap.style.gridColumn = wrap._origGridCol;
-      wrap.style.gridRow = wrap._origGridRow;
-    }
+  // Only close if the click is on the overlay itself, not inside the expanded card
+  if (expandedCard.contains(e.target)) return;
 
-    expandedCard.classList.remove('expanded');
-    expandedCard = null;
-    this.classList.remove('active');
+  const wrap = expandedCard.parentElement;
+  if (wrap && wrap._origGridCol) {
+    wrap.style.gridColumn = wrap._origGridCol;
+    wrap.style.gridRow = wrap._origGridRow;
   }
+
+  expandedCard.classList.remove('expanded');
+  expandedCard = null;
+  this.classList.remove('active');
 });
+
 }
 
 // ─── Folder/File Loaders ───
