@@ -198,14 +198,14 @@ button.hz-meta-pill:hover{border-color:rgba(255,255,255,.15);color:var(--text)}
 /* ═══════════════════════════════════════════
    INLINE EXPAND (concept Option A)
 ═══════════════════════════════════════════ */
-.hz-card.expanded{height:auto !important;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12);box-shadow:0 12px 50px rgba(0,0,0,.5);cursor:default;animation:cardExpand .35s var(--ease) forwards;z-index:20}
+.hz-card.expanded{height:auto !important;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12);box-shadow:0 12px 50px rgba(0,0,0,.5);cursor:default;animation:cardExpand .35s var(--ease) forwards;z-index:30;position:relative}
 .hz-card.expanded .hz-card-row1{display:none}
 .hz-card.expanded .hz-card-title{display:none}
 .hz-card.expanded .hz-card-sub{display:none}
 .hz-card.expanded .hz-card-tags{display:none}
 .hz-card.expanded .hz-card-tips{display:none}
 .hz-card.expanded .hz-card-route{display:none}
-.journal-entry.expanded{z-index:20;background:rgba(255,255,255,.05);box-shadow:0 8px 40px rgba(0,0,0,.5);border-radius:12px;border:1px solid rgba(255,255,255,.12)}
+.journal-entry.expanded{z-index:30;position:relative;background:rgba(255,255,255,.05);box-shadow:0 8px 40px rgba(0,0,0,.5);border-radius:12px;border:1px solid rgba(255,255,255,.12)}
 .journal-entry.expanded .journal-entry-collapsed{display:none}
 @keyframes cardExpand{0%{opacity:.9;transform:scale(.98)}100%{opacity:1;transform:scale(1)}}
 
@@ -272,7 +272,7 @@ button.hz-meta-pill:hover{border-color:rgba(255,255,255,.15);color:var(--text)}
 .hz-connector-return .hz-connector-pill{border-style:dashed !important}
 .hz-connector-pill{cursor:pointer;transition:all .3s var(--ease)}
 .hz-connector-pill:hover{transform:scale(1.04);filter:brightness(1.2)}
-.hz-connector.expanded{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px;box-shadow:0 12px 50px rgba(0,0,0,.5);cursor:default;z-index:10;animation:cardExpand .35s var(--ease) forwards}
+.hz-connector.expanded{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px;box-shadow:0 12px 50px rgba(0,0,0,.5);cursor:default;z-index:30;position:relative;animation:cardExpand .35s var(--ease) forwards}
 .hz-connector.expanded .hz-connector-pill{display:none}
 .hz-connector.expanded .hz-connector-line-v{display:none}
 .hz-connector .card-expanded{display:none;padding:0}
@@ -344,7 +344,7 @@ button.hz-meta-pill:hover{border-color:rgba(255,255,255,.15);color:var(--text)}
 /* ═══════════════════════════════════════════
    OVERLAY
 ═══════════════════════════════════════════ */
-#card-overlay{position:fixed;inset:0;z-index:5;background:rgba(0,0,0,0);opacity:0;pointer-events:none;transition:opacity .3s,background .3s}
+#card-overlay{position:fixed;inset:0;z-index:15;background:rgba(0,0,0,0);opacity:0;pointer-events:none;transition:opacity .3s,background .3s}
 #card-overlay.active{opacity:1;pointer-events:auto;background:rgba(0,0,0,.15)}
 
 /* ═══════════════════════════════════════════
