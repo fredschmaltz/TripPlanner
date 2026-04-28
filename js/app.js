@@ -175,17 +175,19 @@ function initApp() {
   // ── Overlay click-to-close (or switch card) ──
   document.getElementById('card-overlay').addEventListener('click', function (e) {
     if (!expandedCard) return;
-    // Check if a non-expanded card is behind the overlay at the click point
+  
+    // Get real clicked element (behind overlay)
     this.style.pointerEvents = 'none';
-    const below = document.elementFromPoint(e.clientX, e.clientY);
+    const realTarget = document.elementFromPoint(e.clientX, e.clientY);
     this.style.pointerEvents = '';
-    // If click happened inside expanded card → ignore
-    if (expandedCard && expandedCard.contains(e.target)) {
+  
+    // ✅ Ignore clicks inside expanded card
+    if (realTarget && expandedCard.contains(realTarget)) {
       return;
     }
-
-    const card = below ? below.closest('.hz-card, .journal-entry, .hz-connector') : null;
-
+  
+    const card = realTarget ? realTarget.closest('.hz-card, .journal-entry, .hz-connector') : null;
+  
     if (card && !card.classList.contains('expanded')) {
       expandCard(card);
     } else {
