@@ -172,15 +172,12 @@ renderDocsList();
 }
 });
 
-// Close expanded card when clicking outside it (bubble phase)
 document.addEventListener(‘click’, function (e) {
 if (!expandedCard) return;
-const overlay = document.getElementById(‘card-overlay’);
+var overlay = document.getElementById(‘card-overlay’);
 if (!overlay || !overlay.classList.contains(‘active’)) return;
-// If click is inside the expanded card, do nothing
 if (expandedCard.contains(e.target)) return;
-// Clicked outside — close
-const wrap = expandedCard.parentElement;
+var wrap = expandedCard.parentElement;
 if (wrap && wrap._origGridCol) {
 wrap.style.gridColumn = wrap._origGridCol;
 wrap.style.gridRow = wrap._origGridRow;
